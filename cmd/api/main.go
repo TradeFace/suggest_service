@@ -3,8 +3,11 @@ package main
 import (
 	"io/ioutil"
 
-	"tradeface.nl/internal/conf"
-	"tradeface.nl/pkg/health"
+	"github.com/deepmap/oapi-codegen/examples/authenticated-api/echo/server"
+	"github.com/tradeface/suggest_service/internal/conf"
+	"github.com/tradeface/suggest_service/pkg/health"
+	"github.com/tradeface/suggest_service/pkg/mongo"
+	"github.com/tradeface/suggest_service/pkg/store"
 
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
@@ -17,6 +20,21 @@ func main() {
 	cfg, err := conf.NewDefaultConfig()
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load config")
+	}
+
+	mongoClient, err := mongo.NewClient(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to db")
+	}
+
+	stores, err := store.New(mongoClient, cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to db")
+	}
+
+	srv, err := server.NewServer(cfg, stores)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to bind api")
 	}
 
 	e := echo.New()
