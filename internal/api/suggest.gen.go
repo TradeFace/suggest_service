@@ -69,8 +69,8 @@ type Pagesize int64
 // Text defines model for text.
 type Text string
 
-// ProductsParams defines parameters for Products.
-type ProductsParams struct {
+// GetProductsParams defines parameters for GetProducts.
+type GetProductsParams struct {
 	// Used to query by name in a list operation.
 	Text *Text `json:"text,omitempty"`
 
@@ -210,15 +210,15 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// Products request
-	Products(ctx context.Context, params *ProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetProducts request
+	GetProducts(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetProduct request
 	GetProduct(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) Products(ctx context.Context, params *ProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProductsRequest(c.Server, params)
+func (c *Client) GetProducts(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProductsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -241,8 +241,8 @@ func (c *Client) GetProduct(ctx context.Context, id string, reqEditors ...Reques
 	return c.Client.Do(req)
 }
 
-// NewProductsRequest generates requests for Products
-func NewProductsRequest(server string, params *ProductsParams) (*http.Request, error) {
+// NewGetProductsRequest generates requests for GetProducts
+func NewGetProductsRequest(server string, params *GetProductsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -409,21 +409,21 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// Products request
-	ProductsWithResponse(ctx context.Context, params *ProductsParams, reqEditors ...RequestEditorFn) (*ProductsResponse, error)
+	// GetProducts request
+	GetProductsWithResponse(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*GetProductsResponse, error)
 
 	// GetProduct request
 	GetProductWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetProductResponse, error)
 }
 
-type ProductsResponse struct {
+type GetProductsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ProductPage
 }
 
 // Status returns HTTPResponse.Status
-func (r ProductsResponse) Status() string {
+func (r GetProductsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -431,7 +431,7 @@ func (r ProductsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ProductsResponse) StatusCode() int {
+func (r GetProductsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -460,13 +460,13 @@ func (r GetProductResponse) StatusCode() int {
 	return 0
 }
 
-// ProductsWithResponse request returning *ProductsResponse
-func (c *ClientWithResponses) ProductsWithResponse(ctx context.Context, params *ProductsParams, reqEditors ...RequestEditorFn) (*ProductsResponse, error) {
-	rsp, err := c.Products(ctx, params, reqEditors...)
+// GetProductsWithResponse request returning *GetProductsResponse
+func (c *ClientWithResponses) GetProductsWithResponse(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*GetProductsResponse, error) {
+	rsp, err := c.GetProducts(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseProductsResponse(rsp)
+	return ParseGetProductsResponse(rsp)
 }
 
 // GetProductWithResponse request returning *GetProductResponse
@@ -478,15 +478,15 @@ func (c *ClientWithResponses) GetProductWithResponse(ctx context.Context, id str
 	return ParseGetProductResponse(rsp)
 }
 
-// ParseProductsResponse parses an HTTP response from a ProductsWithResponse call
-func ParseProductsResponse(rsp *http.Response) (*ProductsResponse, error) {
+// ParseGetProductsResponse parses an HTTP response from a GetProductsWithResponse call
+func ParseGetProductsResponse(rsp *http.Response) (*GetProductsResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ProductsResponse{
+	response := &GetProductsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -534,7 +534,7 @@ func ParseGetProductResponse(rsp *http.Response) (*GetProductResponse, error) {
 type ServerInterface interface {
 	// Get a list of suggested products.
 	// (GET /product)
-	Products(ctx echo.Context, params ProductsParams) error
+	GetProducts(ctx echo.Context, params GetProductsParams) error
 
 	// (GET /product/{id})
 	GetProduct(ctx echo.Context, id string) error
@@ -545,12 +545,12 @@ type ServerInterfaceWrapper struct {
 	Handler ServerInterface
 }
 
-// Products converts echo context to params.
-func (w *ServerInterfaceWrapper) Products(ctx echo.Context) error {
+// GetProducts converts echo context to params.
+func (w *ServerInterfaceWrapper) GetProducts(ctx echo.Context) error {
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params ProductsParams
+	var params GetProductsParams
 	// ------------- Optional query parameter "text" -------------
 
 	err = runtime.BindQueryParameter("form", true, false, "text", ctx.QueryParams(), &params.Text)
@@ -580,7 +580,7 @@ func (w *ServerInterfaceWrapper) Products(ctx echo.Context) error {
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Products(ctx, params)
+	err = w.Handler.GetProducts(ctx, params)
 	return err
 }
 
@@ -628,7 +628,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.GET(baseURL+"/product", wrapper.Products)
+	router.GET(baseURL+"/product", wrapper.GetProducts)
 	router.GET(baseURL+"/product/:id", wrapper.GetProduct)
 
 }
@@ -636,25 +636,25 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

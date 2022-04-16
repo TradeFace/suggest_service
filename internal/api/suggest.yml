@@ -21,7 +21,7 @@ paths:
   /product: 
     get:
       summary: "Get a list of suggested products."
-      operationId: Products
+      operationId: GetProducts
       description: "Return a list of suggested products."
 
       tags:

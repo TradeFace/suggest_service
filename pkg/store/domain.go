@@ -2,15 +2,26 @@ package store
 
 import (
 	"github.com/tradeface/suggest_service/internal/conf"
+	"github.com/tradeface/suggest_service/pkg/mongo"
 )
 
-// DomainMongo provides a doamin store for mongo
-type DomainMongo struct {
-	mongo *mongoClient
+// DomainStore provides a doamin store for mongo
+type DomainStore struct {
+	mongo *mongo.MongoClient
 	cfg   *conf.Config
 }
 
-// NewDomain new project store
-func NewDomain(mc *mongoClient, cfg *conf.Config) DomainMongo {
-	return &DomainMongo{mongo: mc, cfg: cfg}
+// NewDomainStore new domain store
+func NewDomainStore(mc *mongo.MongoClient, cfg *conf.Config) DomainStore {
+	return DomainStore{mongo: mc, cfg: cfg}
+}
+
+func (ds *DomainStore) GetByHost(host string) map[string]interface{} {
+
+	tmp := map[string]interface{}{
+		"data": map[string]interface{}{
+			"suppliers": []string{"henk", "jan", "piet", "klaas"},
+		},
+	}
+	return tmp
 }

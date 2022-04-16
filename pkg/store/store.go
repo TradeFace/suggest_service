@@ -1,16 +1,20 @@
 package store
 
 import (
-	"github.com/tradeface/pkg/conf"
+	"github.com/tradeface/suggest_service/internal/conf"
+	"github.com/tradeface/suggest_service/pkg/elastic"
+	"github.com/tradeface/suggest_service/pkg/mongo"
 )
 
 type Stores struct {
-	Domain Domain
+	Domain  DomainStore
+	Product ProductStore
 }
 
 // New create all the stores
-func New(mongo *mongo.mongoClient, cfg *conf.Config) (*Stores, error) {
+func New(mongo *mongo.MongoClient, es *elastic.ElasticClient, cfg *conf.Config) (*Stores, error) {
 	return &Stores{
-		Domain: NewDomain(mongo, cfg),
+		Domain:  NewDomainStore(mongo, cfg),
+		Product: NewProductStore(es, cfg),
 	}, nil
 }
