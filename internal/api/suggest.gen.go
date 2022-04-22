@@ -21,6 +21,23 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Domain response.
+type Domain struct {
+	Attributes *struct {
+		// A description of the domain, with some background.
+		Suppliers *[]interface{} `json:"suppliers,omitempty"`
+	} `json:"attributes,omitempty"`
+
+	// Each resource object’s type and id pair MUST [identify](https://jsonapi.org/format/#document-resource-object-identification) a single, unique resource.
+	Id    Id `json:"id"`
+	Links *struct {
+		Self *Link `json:"self,omitempty"`
+	} `json:"links,omitempty"`
+
+	// The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.
+	Type Type `json:"type"`
+}
+
 // Product response.
 type Product struct {
 	Attributes *struct {
@@ -210,11 +227,26 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetDomain request
+	GetDomain(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetProducts request
 	GetProducts(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetProduct request
 	GetProduct(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) GetDomain(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDomainRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetProducts(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -239,6 +271,40 @@ func (c *Client) GetProduct(ctx context.Context, id string, reqEditors ...Reques
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewGetDomainRequest generates requests for GetDomain
+func NewGetDomainRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/domain/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewGetProductsRequest generates requests for GetProducts
@@ -409,11 +475,36 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetDomain request
+	GetDomainWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetDomainResponse, error)
+
 	// GetProducts request
 	GetProductsWithResponse(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*GetProductsResponse, error)
 
 	// GetProduct request
 	GetProductWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetProductResponse, error)
+}
+
+type GetDomainResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Domain
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDomainResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDomainResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetProductsResponse struct {
@@ -460,6 +551,15 @@ func (r GetProductResponse) StatusCode() int {
 	return 0
 }
 
+// GetDomainWithResponse request returning *GetDomainResponse
+func (c *ClientWithResponses) GetDomainWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetDomainResponse, error) {
+	rsp, err := c.GetDomain(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDomainResponse(rsp)
+}
+
 // GetProductsWithResponse request returning *GetProductsResponse
 func (c *ClientWithResponses) GetProductsWithResponse(ctx context.Context, params *GetProductsParams, reqEditors ...RequestEditorFn) (*GetProductsResponse, error) {
 	rsp, err := c.GetProducts(ctx, params, reqEditors...)
@@ -476,6 +576,32 @@ func (c *ClientWithResponses) GetProductWithResponse(ctx context.Context, id str
 		return nil, err
 	}
 	return ParseGetProductResponse(rsp)
+}
+
+// ParseGetDomainResponse parses an HTTP response from a GetDomainWithResponse call
+func ParseGetDomainResponse(rsp *http.Response) (*GetDomainResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDomainResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Domain
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetProductsResponse parses an HTTP response from a GetProductsWithResponse call
@@ -532,6 +658,9 @@ func ParseGetProductResponse(rsp *http.Response) (*GetProductResponse, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /domain/{id})
+	GetDomain(ctx echo.Context, id string) error
 	// Get a list of suggested products.
 	// (GET /product)
 	GetProducts(ctx echo.Context, params GetProductsParams) error
@@ -543,6 +672,22 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GetDomain converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDomain(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetDomain(ctx, id)
+	return err
 }
 
 // GetProducts converts echo context to params.
@@ -628,6 +773,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/domain/:id", wrapper.GetDomain)
 	router.GET(baseURL+"/product", wrapper.GetProducts)
 	router.GET(baseURL+"/product/:id", wrapper.GetProduct)
 
@@ -636,25 +782,27 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"oR5/BwAA///9+MI9JBEAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

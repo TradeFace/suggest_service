@@ -3,7 +3,7 @@ package store
 import (
 	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/pkg/elastic"
-	"github.com/tradeface/suggest_service/pkg/mongo"
+	mongo_client "github.com/tradeface/suggest_service/pkg/mongo"
 )
 
 type Stores struct {
@@ -12,7 +12,7 @@ type Stores struct {
 }
 
 // New create all the stores
-func New(mongo *mongo.MongoClient, es *elastic.ElasticClient, cfg *conf.Config) (*Stores, error) {
+func New(mongo *mongo_client.MongoClient, es *elastic.ElasticClient, cfg *conf.Config) (*Stores, error) {
 	return &Stores{
 		Domain:  NewDomainStore(mongo, cfg),
 		Product: NewProductStore(es, cfg),

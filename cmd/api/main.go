@@ -6,8 +6,7 @@ import (
 	"github.com/tradeface/suggest_service/internal/api"
 	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/pkg/elastic"
-	"github.com/tradeface/suggest_service/pkg/health"
-	"github.com/tradeface/suggest_service/pkg/mongo"
+	mongo_client "github.com/tradeface/suggest_service/pkg/mongo"
 	"github.com/tradeface/suggest_service/pkg/server"
 	"github.com/tradeface/suggest_service/pkg/store"
 
@@ -29,7 +28,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to elastic")
 	}
 
-	mongoClient, err := mongo.NewClient(cfg)
+	mongoClient, err := mongo_client.NewClient(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to mongo")
 	}
@@ -49,7 +48,7 @@ func main() {
 	e.Logger.SetOutput(ioutil.Discard)
 	e.Logger.SetLevel(echolog.OFF)
 
-	e.GET("/health", echo.WrapHandler(health.Handler()))
+	// e.GET("/health", echo.WrapHandler(health.Handler()))
 
 	api.RegisterHandlers(e, srv)
 

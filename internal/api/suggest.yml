@@ -4,16 +4,16 @@ info:
   description: |
     This API enables raising, commenting and voting on issues.
   version: "1.0"
-  termsOfService: "https://issues.wolfe.id.au/terms"
+  termsOfService: "https://issues.tradeface.nl/terms"
   contact:
     name: "Store API"
-    url: "https://issues.wolfe.id.au/api"
-    email: "mark@wolfe.id.au"
+    url: "https://issues.tradeface.nl/api"
+    email: "niels@tradeface.nl"
   license:
     name: "CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)"
-    url: "https://issues.wolfe.id.au/license"
+    url: "https://issues.tradeface.nl/license"
 servers:
-  - url: https://api.issues.wolfe.id.au/v1
+  - url: https://api.issues.tradeface.nl/v1
     description: Production server
 
   
@@ -61,6 +61,29 @@ paths:
                 $ref: '#/components/schemas/Product'
         '404':
           description: The product does not exists.
+  /domain/{id}:
+    get:
+      operationId: GetDomain
+      description: Returns a domain based on it's identifier.
+
+      tags:
+      - domain
+      parameters:
+        - name: id
+          in: path
+          description: Identifier of domain to fetch
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: domain response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+        '404':
+          description: The domain does not exists.
    
  
 components:
@@ -129,7 +152,11 @@ components:
     id:
       type: string
       description: "Each resource object\u2019s type and id pair MUST [identify](https://jsonapi.org/format/#document-resource-object-identification)\
-        \ a single, unique resource."    
+        \ a single, unique resource."
+      # x-go-type: "jsonapi"    
+      # x-go-package: "jsonapi"
+      # x-oapi-codegen-extra-tags: 
+      #   jsonapi: "primary,domain" 
  
     Product:
       description: Product response.
@@ -165,4 +192,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Product'
+
+    Domain:
+      description: Domain response.
+      type: object
+      required:
+      - type
+      - id
+      additionalProperties: false
+      properties:
+        type:
+          $ref: '#/components/schemas/type'
+        id:
+          $ref: '#/components/schemas/id'
+        links:
+          type: object
+          properties:
+            self:
+              $ref: '#/components/schemas/link'
+        attributes:
+          type: object
+          properties:            
+            suppliers:
+              type: array
+              description:
+                A description of the domain, with some background.
     
