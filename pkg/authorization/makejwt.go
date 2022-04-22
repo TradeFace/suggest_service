@@ -21,14 +21,6 @@ func MakeJwt(usr *document.User) error {
 		},
 	}
 
-	// claims := &AuthClaims{
-	// 	CompanyId: usr.Email,
-	// 	Name:      usr.Name,
-	// 	Roles:     usr.Roles,
-	// 	ExpiresAt: time.Now().Add(time.Minute * 5).Unix(),
-	// 	NotBefore: time.Now().Unix(),
-	// }
-
 	// Create token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 

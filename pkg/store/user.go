@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+
 	"github.com/tradeface/suggest_service/pkg/authorization"
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/mongo"
@@ -27,9 +29,13 @@ func (u *User) Login(email string, password string) (results []*document.User, e
 			bson.M{"password": password},
 		},
 	}, &results)
+
 	for _, result := range results {
 		u.setStringId(result)
-		authorization.MakeJwt(result)
+		err := authorization.MakeJwt(result)
+		if err != nil {
+			return results, fmt.Errorf("Unauthorized")
+		}
 	}
 
 	return results, err

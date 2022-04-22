@@ -82,6 +82,3 @@ func (au *AuthUser) GetClaim(claim string) (interface{}, error) {
 	}
 	return nil, errors.New("not a claim")
 }
-
-//TODO: add function to check authorization
-//TODO: add function to  get other claims (like companyid)
