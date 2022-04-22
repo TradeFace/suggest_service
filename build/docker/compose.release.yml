@@ -1,0 +1,29 @@
+version: "3.4"
+
+# This compose file is used to release the containers in production, staging or review.
+secrets:
+  mongo_accept_uri:
+    external: true
+  es_accept_uri:
+    external: true
+  mongo_production_uri:
+    external: true
+  es_production_uri:
+    external: true
+
+services:
+  suggest_service:
+    image: ${CI_REGISTRY_IMAGE}/suggest_service
+    secrets:
+      - mongo_${RELEASE_STAGE}_uri
+      - es_${RELEASE_STAGE}_uri
+    environment:
+      - ENV_INSTANCE=${RELEASE_STAGE}
+    command:
+      - --loglevel=error
+
+    dns:
+      - 10.12.0.50
+    network_mode: "host"
+    deploy:
+      replicas: ${REPLICAS}

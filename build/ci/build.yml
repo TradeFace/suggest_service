@@ -1,0 +1,17 @@
+# This file is included by the .gitlab-ci.yml file in the project root.
+#
+# CI/CD build stage.
+# This file contains job configuration for the build stage. This stage is executed every time a new tag is created.
+
+.build_tpl: &build
+  image: docker/compose:1.29.2
+  stage: build
+  before_script:
+    - echo "${CI_REGISTRY_PASSWORD}" | docker login -u ${CI_REGISTRY_USER} ${CI_REGISTRY} --password-stdin
+  script:
+    - docker-compose -f build/docker/compose.build.yml build
+    - docker-compose -f build/docker/compose.build.yml push
+
+
+production image:
+  <<: *build

@@ -1,0 +1,33 @@
+# This file is included by the .gitlab-ci.yml file in the project root.
+#
+# CI/CD release stage.
+# This file contains job configuration for the release stage. This stage is executed every time a new tag is created.
+
+.release_tpl: &release
+  image: docker/compose:1.29.2
+  stage: release
+  before_script:
+    - echo "${CI_REGISTRY_PASSWORD}" | docker login -u ${CI_REGISTRY_USER} ${CI_REGISTRY} --password-stdin
+    # add ssh key for deployer. the key itself is available as env variable
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    - 'which ssh-agent || ( apk update && apk add openssh-client && rm -rf /var/cache/apk/* )'
+    - eval $(ssh-agent -s)
+    - echo "${DEPLOYER_SSH_KEY}" | tr -d '\r' | ssh-add -
+    - docker context create remote --docker "host=ssh://${DEPLOY_USER}@${DEPLOY_HOST}"
+  script:
+    - docker --context remote stack deploy -c build/docker/compose.release.yml --with-registry-auth --prune ${STACK}
+
+staging environment:
+  variables:
+    RELEASE_STAGE: accept
+    REPLICAS: 1
+    STACK: suggest_service_accept
+  <<: *release
+
+production environment:
+  variables:
+    RELEASE_STAGE: production
+    STACK: suggest_service_production
+    REPLICAS: 0
+  <<: *release

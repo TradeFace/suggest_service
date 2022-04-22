@@ -1,31 +1,76 @@
 package conf
 
 import (
+	"os"
+
 	"github.com/kelseyhightower/envconfig"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
+var (
+	// ErrMissingEnvironmentStage missing stage configuration
+	ErrMissingEnvironmentStage = errors.New("Missing Stage ENV Variable")
+
+	// ErrMissingEnvironmentBranch missing branch configuration
+	ErrMissingEnvironmentBranch = errors.New("Missing Branch ENV Variable")
+)
+
+// Config for the environment
 type Config struct {
-	Debug      bool   `envconfig:"DEBUG"`
-	Addr       string `envconfig:"ADDR" default:":8888"`
-	Stage      string `envconfig:"STAGE" default:"dev"`
-	Branch     string `envconfig:"BRANCH"`
-	MongoURI   string `envconfig:"MONGO_URI" default:"mongodb://root:example@localhost:27017/"`
-	MongoDB    string `envconfig:"MONGO_DB" default:"suggest_test"`
-	ElasticURI string `envconfig:"ELASTIC_URI" default:"http://localhost:9200/"`
-	ElasticDB  string `envconfig:"ELASTIC_DB" default:"suggest_testa"`
-	// PGDatasource         string `envconfig:"PGDATASOURCE"`
-	// OpenIDProvider       string `envconfig:"OPENID_PROVIDER_URL"`
-	// ClientID             string `envconfig:"OAUTH_CLIENT_ID"`
-	// MetricsWriteInterval int    `envconfig:"METRICS_WRITE_INTERVAL"`
-	// DbSecrets            string `envconfig:"DB_SECRET"`
+	Debug        bool   `envconfig:"DEBUG"`
+	Addr         string `envconfig:"ADDR" default:":8080"`
+	Stage        string `envconfig:"STAGE" default:"dev"`
+	Branch       string `envconfig:"BRANCH"`
+	ElasticURI   string `envconfig:"ELASTIC_URI" default:"http://127.0.0.1:9200"`
+	ElasticIndex string `envconfig:"ELASTIC_INDEX" default:"artikelbank_dev"`
+	MongoURI     string `envconfig:"MONGO_URI" default:"mongodb://127.0.0.1:27017"`
+	MongoDB      string `envconfig:"MONGO_DB" default:"artikelbank_dev"`
 }
 
-func NewDefaultConfig() (*Config, error) {
+func (cfg *Config) validate() error {
+	if cfg.Stage == "" {
+		return ErrMissingEnvironmentStage
+	}
+	// if cfg.Branch == "" {
+	// 	return ErrMissingEnvironmentBranch
+	// }
 
+	return nil
+}
+
+func (cfg *Config) logging() error {
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if cfg.Debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+	if cfg.Stage == "local" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+
+	return nil
+}
+
+// NewDefaultConfig reads configuration from environment variables and validates it
+func NewDefaultConfig() (*Config, error) {
 	cfg := new(Config)
 	err := envconfig.Process("", cfg)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to parse environment config")
 	}
+
+	err = cfg.validate()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed validation of config")
+	}
+	err = cfg.logging()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed setup logging based on config")
+	}
+	log.Info().Str("stage", cfg.Stage).Bool("debug", cfg.Debug).Msg("logging configured")
+	log.Info().Str("stage", cfg.Stage).Str("branch", cfg.Branch).Msg("Configuration loaded")
+
 	return cfg, nil
 }

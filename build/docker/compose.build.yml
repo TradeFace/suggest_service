@@ -1,0 +1,8 @@
+version: "3.4"
+
+services:
+  suggest_service:
+    image: ${CI_REGISTRY_IMAGE}/suggest_service
+    build:
+      context: ../../
+      dockerfile: build/docker/suggest_service/Dockerfile

@@ -1,27 +1,27 @@
 package elastic
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net"
+	"io"
 	"net/http"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/esapi"
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/pkg/model"
 )
 
-type ElasticClient struct {
-	cfg    *conf.Config
-	client *elasticsearch.Client
+type Elastic struct {
+	Client    *elasticsearch.Client
+	URI       []string
+	IndexName string
+	User      string
+	Password  string
+	debug     bool
 }
 
 type ElasticResult struct {
@@ -55,191 +55,89 @@ type ElasticResultInnerHits struct {
 	Source *model.Product `json:"_source"`
 }
 
-func NewClient(cfg *conf.Config) (*ElasticClient, error) {
+func NewElastic(cfg *conf.Config) (*Elastic, error) {
 
-	esCfg := elasticsearch.Config{
-		Addresses: []string{
-			cfg.ElasticURI,
-		},
-		// Username: "foo",
-		// Password: "bar",
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost:   10,
-			ResponseHeaderTimeout: time.Second,
-			DialContext:           (&net.Dialer{Timeout: time.Second}).DialContext,
-			// TLSClientConfig: &tls.Config{
-			// 	MinVersion: tls.VersionTLS12,
-			// },
-		},
+	es := &Elastic{
+		URI:       []string{cfg.ElasticURI},
+		IndexName: cfg.ElasticIndex,
+		debug:     false,
 	}
-	client, err := elasticsearch.NewClient(esCfg)
-
-	return &ElasticClient{
-		cfg:    cfg,
-		client: client,
-	}, err
+	err := es.startClient()
+	return es, err
 }
 
-func (es *ElasticClient) Search(id string, sourceModel interface{}) ElasticResult {
+func (es *Elastic) startClient() error {
 
-	// rih := []ElasticResultInnerHits{
-	// 	Source: &model.Product{},
-	// }
+	var err error
 
-	// r := ElasticResult{
-	// 	Hits: ElasticResultOuterHits{
-	// 		Total: struct {
-	// 			Value    int    "json:\"value\""
-	// 			Relation string "json:\"relation\""
-	// 		}{},
-	// 		MaxScore: 0,
-	// 		Hits:     make(ElasticResultInnerHits,0),
-	// 	},
-	// }
-	// x := ElasticResultInnerHitsSlice{
-	// 	ElasticResultInnerHits{
-	// 		Source: &sourceModel,
-	// 	},
-	// }
-	// hh := make(ElasticResultInnerHits, 8)
-	r := ElasticResult{
-		// Took:     0,
-		// TimedOut: false,
-		// Shards: struct {
-		// 	Total      int "json:\"total\""
-		// 	Successful int "json:\"successful\""
-		// 	Skipped    int "json:\"skipped\""
-		// 	Failed     int "json:\"failed\""
-		// }{},
-		// Hits: ElasticResultOuterHits{
-		// 	Total: struct {
-		// 		Value    int    "json:\"value\""
-		// 		Relation string "json:\"relation\""
-		// 	}{},
-		// 	MaxScore: 0,
-		// 	Hits: ElasticResultInnerHitsSlice{
-		// 		ElasticResultInnerHits{
-		// 			Index:  id,
-		// 			Type:   "",
-		// 			Id:     id,
-		// 			Score:  0,
-		// 			Source: &model.Product{},
-		// 		},
-		// 	},
-		// },
+	es.Client, err = elasticsearch.NewClient(elasticsearch.Config{
+		Addresses:     es.URI,
+		RetryOnStatus: []int{502, 503, 504, 429},
+		RetryBackoff:  func(i int) time.Duration { return time.Duration(i) * 100 * time.Millisecond },
+		MaxRetries:    5,
+		Logger:        es,
+	})
+
+	if err != nil {
+		log.Printf("Error creating the client: %s", err)
 	}
-	var buf bytes.Buffer
+	return err
+}
 
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"description": id,
-			},
-		},
-	}
-	if err := json.NewEncoder(&buf).Encode(query); err != nil {
-		log.Fatalf("Error encoding query: %s", err)
-	}
+func (es *Elastic) Search(query string) (r ElasticResult, err error) {
 
-	res, err := es.client.Search(
-		es.client.Search.WithContext(context.Background()),
-		es.client.Search.WithIndex(es.cfg.ElasticDB),
-		es.client.Search.WithBody(&buf),
-		es.client.Search.WithTrackTotalHits(true),
-		es.client.Search.WithPretty(),
+	res, err := es.Client.Search(
+		es.Client.Search.WithContext(context.Background()),
+		es.Client.Search.WithIndex(es.IndexName),
+		es.Client.Search.WithBody(strings.NewReader(query)),
+		es.Client.Search.WithTrackTotalHits(true),
+		es.Client.Search.WithPretty(),
 	)
 	if err != nil {
-		log.Fatalf("Error getting response: %s", err)
+		log.Printf("Error getting response: %s", err)
+		return r, err
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+	}(res.Body)
 
 	if res.IsError() {
 		var e map[string]interface{}
 		if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
-			log.Fatalf("Error parsing the response body: %s", err)
+			return r, fmt.Errorf("Error parsing the response body: %s", err)
 		} else {
 			// Print the response status and error information.
-			log.Fatalf("[%s] %s: %s",
+			return r, fmt.Errorf("[%s] %s: %s",
 				res.Status(),
 				e["error"].(map[string]interface{})["type"],
 				e["error"].(map[string]interface{})["reason"],
 			)
 		}
 	}
-	log.Println("------------")
-	log.Println(res)
-	log.Println("------------")
 	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
+		return r, fmt.Errorf("Error parsing the response body: %s", err)
 	}
-	return r
+	return r, err
 }
 
-func (es *ElasticClient) get(id string) {
-
-}
-
-func (es *ElasticClient) Post(record interface{}) {
-
-	var wg sync.WaitGroup
-
-	for i, title := range []string{"Test One", "Test Two", "Test drie", "Test vier", "Test 5", "Test 6", "Test 7", "Test 8"} {
-		wg.Add(1)
-
-		go func(i int, title string) {
-			defer wg.Done()
-
-			doc := `{
-				"productId": "%d",
-				"description": "%s",
-				"images": [
-					{
-						"name": "image%d.png"
-					},
-					{
-						"name": "image%d.png"
-					}
-				]
-			}`
-			doc = fmt.Sprintf(doc, i+5, title, i+5, i+2)
-
-			// Set up the request object.
-			req := esapi.IndexRequest{
-				Index:      es.cfg.ElasticDB,
-				DocumentID: strconv.Itoa(i + 1),
-				Body:       strings.NewReader(doc),
-				Refresh:    "true",
-			}
-
-			// Perform the request with the client.
-			res, err := req.Do(context.Background(), es.client)
-			if err != nil {
-				log.Fatalf("Error getting response: %s", err)
-			}
-			defer res.Body.Close()
-
-			if res.IsError() {
-				log.Printf("[%s] Error indexing document ID=%d", res.Status(), i+1)
-			} else {
-				// Deserialize the response into a map.
-				var r map[string]interface{}
-				if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-					log.Printf("Error parsing the response body: %s", err)
-				} else {
-					// Print the response status and indexed document version.
-					log.Printf("[%s] %s; version=%d", res.Status(), r["result"], int(r["_version"].(float64)))
-				}
-			}
-		}(i, title)
+//debug functions
+func (es *Elastic) LogRoundTrip(req *http.Request, res *http.Response, err error, ts time.Time, td time.Duration) error {
+	if es.debug == false {
+		return nil
 	}
-	wg.Wait()
+	log.Printf("req", req)
+	log.Printf("res", res)
 
+	return nil
 }
 
-func (es *ElasticClient) put(record interface{}) {
-
+func (es *Elastic) RequestBodyEnabled() bool {
+	return es.debug
 }
 
-func (es *ElasticClient) delete(id string) {
-
+func (es *Elastic) ResponseBodyEnabled() bool {
+	return es.debug
 }
