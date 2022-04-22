@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/jsonapi v1.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.7.2
@@ -14,13 +15,10 @@ require (
 )
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
-	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -34,7 +32,6 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
 // ib.nl/suggest_service/repo v0.0.0-00010101000000-000000000000 // indirect
 )
 

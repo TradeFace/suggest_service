@@ -1,17 +1,48 @@
 version: "3.4"
 
 services:
-  suggest:
-    build:
-      context: .
-      dockerfile: .docker/suggest_service/Dockerfile
+  # suggest:
+  #   build:
+  #     context: .
+  #     dockerfile: build/docker/suggest_service/Dockerfile
+  #   environment:
+  #    - LOGLEVEL=error
+  #    - ELASTIC_URI=http://localhost:9200
+  #    - ELASTIC_INDEX=artikelbank_dev
+  #    - MONGO_URI=mongodb://127.0.0.1:27017
+  #    - MONGO_DB=artikelbank_dev
+  #   dns:
+  #       - 8.8.8.8
+  #       - 8.8.4.4
+  #   network_mode: "host"
+  mongo:
+    image: mongo
+    restart: always
+    network_mode: host
     environment:
-     - LOGLEVEL=error
-     - ELASTIC_URI=http://localhost:9200
-     - ELASTIC_INDEX=artikelbank_dev
-     - MONGO_URI=mongodb://127.0.0.1:27017
-     - MONGO_DB=artikelbank_dev
-    dns:
-        - 8.8.8.8
-        - 8.8.4.4
-    network_mode: "host"
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - ./var/mongo/data:/data/db
+    ports:
+      - 27017:27017
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.2
+    container_name: elastic
+    environment:
+      - node.name=elastic
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      # - discovery.seed_hosts=es02,es03
+      # - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./var/elasticsearch/data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    network_mode: host
