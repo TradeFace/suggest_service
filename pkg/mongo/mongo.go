@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tradeface/suggest_service/internal/conf"
+	"go.mongodb.org/mongo-driver/bson"
 	mongo_driver "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -60,4 +61,24 @@ func (mc *MongoClient) close() {
 			log.Default().Println(err)
 		}
 	}()
+}
+
+func (mc *MongoClient) GetOne(coll string, query bson.M, result interface{}) error {
+
+	err := mc.Database.Collection(coll).FindOne(context.Background(), query).Decode(result)
+	return err
+}
+
+func (mc *MongoClient) GetAll(coll string, query bson.M, results interface{}) (err error) {
+
+	cur, err := mc.Database.Collection(coll).Find(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	defer cur.Close(context.Background())
+
+	if err = cur.All(context.Background(), results); err != nil {
+		return err
+	}
+	return nil
 }

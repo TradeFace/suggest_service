@@ -12,7 +12,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/internal/conf"
-	"github.com/tradeface/suggest_service/pkg/model"
+	"github.com/tradeface/suggest_service/pkg/document"
 )
 
 type Elastic struct {
@@ -48,11 +48,11 @@ type ElasticResultOuterHits struct {
 type ElasticResultInnerHitsSlice []ElasticResultInnerHits
 
 type ElasticResultInnerHits struct {
-	Index  string         `json:"_index"`
-	Type   string         `json:"_type"`
-	Id     string         `json:"_id"`
-	Score  float64        `json:"_score"`
-	Source *model.Product `json:"_source"`
+	Index  string            `json:"_index"`
+	Type   string            `json:"_type"`
+	Id     string            `json:"_id"`
+	Score  float64           `json:"_score"`
+	Source *document.Product `json:"_source"`
 }
 
 func NewElastic(cfg *conf.Config) (*Elastic, error) {

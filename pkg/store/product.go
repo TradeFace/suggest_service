@@ -1,11 +1,12 @@
 package store
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/tradeface/suggest_service/internal/conf"
+	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/elastic"
-	"github.com/tradeface/suggest_service/pkg/model"
 	"github.com/tradeface/suggest_service/pkg/mongo"
 )
 
@@ -23,8 +24,9 @@ func NewProduct(dbconn *mongo.MongoClient, esconn *elastic.Elastic, cfg *conf.Co
 	}
 }
 
-func (p *Product) Search(query string) (results []*model.Product, err error) {
+func (p *Product) Search(query string) (results []*document.Product, err error) {
 
+	fmt.Println(query)
 	res, err := p.esconn.Search(query)
 	if err != nil {
 		log.Printf("Error getting response: %s", err)

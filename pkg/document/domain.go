@@ -1,6 +1,8 @@
-package model
+package document
 
 import (
+	"fmt"
+
 	"github.com/tradeface/suggest_service/pkg/helpers"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -22,7 +24,11 @@ func (d *Domain) ModuleIsEnabled(module string) bool {
 	return s.Contains(module)
 }
 
-func (d *Domain) GetSetting(module string, setting string) interface{} {
+func (d *Domain) GetSetting(module string, setting string) (interface{}, error) {
 
-	return d.Settings[module].(map[string]interface{})[setting]
+	if _, ok := d.Settings[module]; !ok {
+		return nil, fmt.Errorf("no settings available for %s", module)
+	}
+
+	return d.Settings[module].(map[string]interface{})[setting], nil
 }

@@ -1,4 +1,4 @@
-package model
+package document
 
 type Product struct {
 	IbCode      string         `jsonapi:"primary,product"`

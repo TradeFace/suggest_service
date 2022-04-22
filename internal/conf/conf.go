@@ -20,13 +20,13 @@ var (
 // Config for the environment
 type Config struct {
 	Debug        bool   `envconfig:"DEBUG"`
-	Addr         string `envconfig:"ADDR" default:":8080"`
+	Addr         string `envconfig:"ADDR" default:":8888"`
 	Stage        string `envconfig:"STAGE" default:"dev"`
 	Branch       string `envconfig:"BRANCH"`
 	ElasticURI   string `envconfig:"ELASTIC_URI" default:"http://127.0.0.1:9200"`
-	ElasticIndex string `envconfig:"ELASTIC_INDEX" default:"artikelbank_dev"`
-	MongoURI     string `envconfig:"MONGO_URI" default:"mongodb://127.0.0.1:27017"`
-	MongoDB      string `envconfig:"MONGO_DB" default:"artikelbank_dev"`
+	ElasticIndex string `envconfig:"ELASTIC_INDEX" default:"suggest_testa"`
+	MongoURI     string `envconfig:"MONGO_URI" default:"mongodb://root:example@127.0.0.1:27017"`
+	MongoDB      string `envconfig:"MONGO_DB" default:"suggest_test"`
 }
 
 func (cfg *Config) validate() error {

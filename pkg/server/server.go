@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/google/jsonapi"
@@ -67,12 +68,14 @@ func (srv *Server) GetDomainList(c echo.Context) error {
 
 	host := c.QueryParam("filter[host]")
 	res, err := srv.stores.Domain.GetWithHost(host)
+
 	if err != nil {
 		srv.sendError(c, err)
 		return nil
 	}
 
 	payload, err := jsonapi.Marshal(res)
+
 	if err != nil {
 		srv.sendError(c, err)
 		return nil
@@ -88,6 +91,7 @@ func (srv *Server) GetDomain(c echo.Context) error {
 		srv.sendError(c, err)
 		return nil
 	}
+	log.Printf("%T", res)
 
 	payload, err := jsonapi.Marshal(res)
 	if err != nil {

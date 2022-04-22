@@ -9,7 +9,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/tradeface/suggest_service/pkg/authorization"
-	"github.com/tradeface/suggest_service/pkg/model"
+	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/store"
 )
 
@@ -65,60 +65,33 @@ func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
 		delete(sh.esQueryCache, host)
 	}
 
-	dbdomain, err := sh.stores.Domain.GetOneWithHost(host)
-	if err != nil {
-		return "", err
-	}
-	filters := sh.getBaseFilters(dbdomain)
+	// dbdomain, err := sh.stores.Domain.GetOneWithHost(host)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// filters := sh.getBaseFilters(dbdomain)
 
 	query := fmt.Sprintf(`{
-        "post_filter": {
-            "bool": {
-                "must": {
-                    "has_child": {
-                        "type": "article",
-                        "query": {
-                            "bool": {
-                                "must": []
-                            }
-                        }
-                    }
-                }
-            }
-        },
+        
         "from": 0,
         "size": %%d,
-        "query": {
-            "function_score": {
-                "query": {
-                    "has_child": {
-                        "type": "article",
-                        "query": {
-                            "bool": {
-                                "must": {
-                                    "match": {
-                                        "suggest": {
-                                            "query": "%%s",
-                                            "fuzziness": 1
-                                        }
-                                    }
-                                },
-                                "filter": [%s]
-                            }
-                        },
-                        "min_children": 1,
-                        "score_mode": "max"
-                    }
-                },
-                "boost_mode": "multiply",
-                "functions": [{
-                    "field_value_factor": {
-                        "field": "ibScore"
-                    }
-                }]
-            }
-        }
-    }`, filters)
+    
+		"query": {
+			"bool": {
+				"must": {
+					"match": {
+						"description": {
+							"query": "%%s",
+							"fuzziness": 1
+						}
+					}
+				}
+				
+			}
+		}
+                       
+                        
+    }`) //"filter": [%s] , filters
 
 	sh.esQueryCache[host] = esQueryCacheItem{
 		expire: time.Now().Add(time.Second * QUERY_CACHE_SEC),
@@ -128,7 +101,7 @@ func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
 	return query, nil
 }
 
-func (sh *suggestHandler) getBaseFilters(domain *model.Domain) string {
+func (sh *suggestHandler) getBaseFilters(domain *document.Domain) string {
 
 	filters := make([]string, 0)
 	if res := sh.getClassificationFilter(domain); res != "" {
@@ -154,7 +127,7 @@ func (sh *suggestHandler) getBaseFilters(domain *model.Domain) string {
 	return strings.Join(filters[:], ",")
 }
 
-func (sh *suggestHandler) getClassificationFilter(domain *model.Domain) string {
+func (sh *suggestHandler) getClassificationFilter(domain *document.Domain) string {
 
 	return fmt.Sprintf(`{
 		"term": {
@@ -163,10 +136,10 @@ func (sh *suggestHandler) getClassificationFilter(domain *model.Domain) string {
 	}`, domain.MainClassification)
 }
 
-func (sh *suggestHandler) getSupplierFilter(domain *model.Domain) string {
+func (sh *suggestHandler) getSupplierFilter(domain *document.Domain) string {
 
 	catalogsStr, err := json.Marshal(domain.Catalogs)
-	if err != nil {
+	if err != nil || len(domain.Catalogs) == 0 {
 		return ""
 	}
 
@@ -181,9 +154,12 @@ func (sh *suggestHandler) getSupplierFilter(domain *model.Domain) string {
 	}`, catalogsStr)
 }
 
-func (sh *suggestHandler) getAvailabilityFilter(domain *model.Domain) string {
+func (sh *suggestHandler) getAvailabilityFilter(domain *document.Domain) string {
 
-	states := domain.GetSetting("SEARCH", "disabled_states")
+	states, err := domain.GetSetting("SEARCH", "disabled_states")
+	if err != nil {
+		return ""
+	}
 
 	statesStr := make([]string, 0)
 	for _, val := range states.(map[string]interface{}) {
@@ -206,14 +182,18 @@ func (sh *suggestHandler) getAvailabilityFilter(domain *model.Domain) string {
 	}`, state)
 }
 
-func (sh *suggestHandler) getStockFilter(domain *model.Domain) string {
+func (sh *suggestHandler) getStockFilter(domain *document.Domain) string {
 
-	if false == domain.ModuleIsEnabled("STOCK") {
+	if !domain.ModuleIsEnabled("STOCK") {
 		return ""
 	}
 
-	stockOnly := domain.GetSetting("STOCK", "search_only_in_stock")
-	if stockOnly.(bool) == false {
+	stockOnly, err := domain.GetSetting("STOCK", "search_only_in_stock")
+	if err != nil {
+		return ""
+	}
+
+	if !stockOnly.(bool) {
 		return ""
 	}
 	return `{
