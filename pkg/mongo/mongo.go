@@ -7,6 +7,7 @@ import (
 
 	"github.com/tradeface/suggest_service/internal/conf"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo_driver "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -81,4 +82,8 @@ func (mc *MongoClient) GetAll(coll string, query bson.M, results interface{}) (e
 		return err
 	}
 	return nil
+}
+
+func (mc *MongoClient) GetMongoId(id string) (objID primitive.ObjectID, err error) {
+	return primitive.ObjectIDFromHex(id)
 }

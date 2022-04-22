@@ -35,12 +35,6 @@ type JWTConfig struct {
 	AuthScheme  string
 }
 
-type jwtCustomClaims struct {
-	Name  string `json:"name"`
-	Admin bool   `json:"admin"`
-	jwt.StandardClaims
-}
-
 // JWTWithConfig middleware which validates tokens
 func JWTWithConfig(config *JWTConfig, auth *authorization.AuthChecker) echo.MiddlewareFunc {
 
@@ -52,30 +46,35 @@ func JWTWithConfig(config *JWTConfig, auth *authorization.AuthChecker) echo.Midd
 		return func(c echo.Context) error {
 			log.Info().Msg("context updating")
 
-			tokenString, err := extractFromHeader(c, "Authorization", config.AuthScheme)
+			tokenString, err := extractFromHeader(c, "Authorization", "Bearer")
 			if err != nil {
 				//no auth found, see what we can do without one
 				log.Info().Msg("no auth found")
 				return next(c)
 			}
+			//try to get it from cached auth
 
 			token, err := jwt.ParseWithClaims(tokenString, &authorization.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 
 				if _, ok := token.Method.(jwt.SigningMethod); !ok {
-					return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
 				return []byte("secret"), nil
 			})
 
-			if token.Valid != true {
+			if !token.Valid || err != nil {
 				//no valid auth found, see what we can do without one
 				log.Info().Msg("no valid auth found")
 				return next(c)
 			}
 
 			claims := token.Claims.(*authorization.AuthClaims)
-			auth.SetTokenClaims(claims)
+			authUser, err := auth.SetTokenClaims(claims)
+			if err != nil {
+				return next(c)
+			}
 
+			c.Set("authUser", authUser)
 			return next(c)
 		}
 	}

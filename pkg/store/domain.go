@@ -1,36 +1,26 @@
 package store
 
 import (
-	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/pkg/document"
-	"github.com/tradeface/suggest_service/pkg/elastic"
 	"github.com/tradeface/suggest_service/pkg/mongo"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	mongo_driver "go.mongodb.org/mongo-driver/mongo"
 )
 
 type Domain struct {
-	dbconn     *mongo.MongoClient
-	esconn     *elastic.Elastic
-	cfg        *conf.Config
-	collection *mongo_driver.Collection
-	collName   string
+	dbconn   *mongo.MongoClient
+	collName string
 }
 
-func NewDomain(dbconn *mongo.MongoClient, esconn *elastic.Elastic, cfg *conf.Config) *Domain {
+func NewDomain(dbconn *mongo.MongoClient) *Domain {
 	return &Domain{
-		dbconn:     dbconn,
-		esconn:     esconn,
-		cfg:        cfg,
-		collName:   "domain",
-		collection: dbconn.Database.Collection("domain"),
+		dbconn:   dbconn,
+		collName: "domain",
 	}
 }
 
 func (d *Domain) GetWithId(id string) (results []*document.Domain, err error) {
 
-	objID, err := d.getMongoId(id)
+	objID, err := d.dbconn.GetMongoId(id)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +47,7 @@ func (d *Domain) GetOneWithHost(host string) (result *document.Domain, err error
 
 	//TODO: query aliases
 	err = d.getOne(bson.M{"host": host}, &result)
+	d.setStringId(result)
 	return result, err
 }
 
@@ -74,8 +65,4 @@ func (d *Domain) setStringId(result *document.Domain) {
 		return
 	}
 	result.Id = result.ObjectID.Hex()
-}
-
-func (d *Domain) getMongoId(id string) (objID primitive.ObjectID, err error) {
-	return primitive.ObjectIDFromHex(id)
 }

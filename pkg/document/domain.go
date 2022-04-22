@@ -19,8 +19,8 @@ type Domain struct {
 }
 
 func (d *Domain) ModuleIsEnabled(module string) bool {
-	s := helpers.NewSet()
-	s.Append(d.Modules)
+	s := helpers.NewSet(d.Modules)
+
 	return s.Contains(module)
 }
 

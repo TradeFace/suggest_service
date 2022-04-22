@@ -9,11 +9,13 @@ import (
 type Stores struct {
 	Product *Product
 	Domain  *Domain
+	User    *User
 }
 
 func New(dbconn *mongo.MongoClient, esconn *elastic.Elastic, cfg *conf.Config) (*Stores, error) {
 	return &Stores{
 		Product: NewProduct(dbconn, esconn, cfg),
-		Domain:  NewDomain(dbconn, esconn, cfg),
+		Domain:  NewDomain(dbconn),
+		User:    NewUser(dbconn),
 	}, nil
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"io/ioutil"
-	"net/http"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -37,31 +35,6 @@ type jwtCustomClaims struct {
 }
 
 //tmp to get token
-func login(c echo.Context) error {
-
-	// Set custom claims
-	claims := &authorization.AuthClaims{
-		"Jon Snow",
-		"123456",
-		true,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * 5).Unix(),
-		},
-	}
-
-	// Create token with claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": t,
-	})
-}
 
 func main() {
 
@@ -85,7 +58,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}
 
-	auth := &authorization.AuthChecker{}
+	auth := authorization.NewAuthChecker()
 
 	srv, err := server.NewServer(cfg, stores, auth)
 	if err != nil {
@@ -98,7 +71,7 @@ func main() {
 	e.Logger.SetLevel(echolog.OFF)
 
 	// tmp Login route
-	e.GET("/login", login)
+	// e.GET("/login", login)
 
 	// e.Use(middleware.Logger())
 	// e.Use(middleware.Recover())
