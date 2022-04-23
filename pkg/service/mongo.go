@@ -15,12 +15,12 @@ import (
 
 type MongoService struct {
 	Client   *mongo.Client
-	cfg      *conf.Config
+	cfg      conf.Config
 	Database *mongo.Database
 	Ctx      context.Context
 }
 
-func NewMongoService(cfg *conf.Config) (*MongoService, error) {
+func NewMongoService(cfg conf.Config) (*MongoService, error) {
 
 	mc := &MongoService{
 		cfg: cfg,
@@ -50,10 +50,8 @@ func (mc *MongoService) Connect() (err error) {
 func (mc *MongoService) IsConnected() bool {
 
 	err := mc.Client.Ping(mc.Ctx, readpref.Primary())
-	if err != nil {
-		return false
-	}
-	return true
+
+	return err == nil
 }
 
 func (mc *MongoService) close() {

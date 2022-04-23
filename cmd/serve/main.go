@@ -51,7 +51,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}
 
-	srv, err := server.NewServer(cfg, stores)
+	srv, err := server.NewServer(&cfg, stores)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to bind api")
 	}

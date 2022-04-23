@@ -11,7 +11,7 @@ type Service struct {
 	Elastic *ElasticService
 }
 
-func New(cfg *conf.Config) (service *Service, err error) {
+func New(cfg conf.Config) (service *Service, err error) {
 
 	mongoService, err := NewMongoService(cfg)
 	if err != nil {

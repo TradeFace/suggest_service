@@ -55,7 +55,7 @@ type ElasticResultInnerHits struct {
 	Source *document.Product `json:"_source"`
 }
 
-func NewElasticService(cfg *conf.Config) (*ElasticService, error) {
+func NewElasticService(cfg conf.Config) (*ElasticService, error) {
 
 	es := &ElasticService{
 		URI:       []string{cfg.ElasticURI},
