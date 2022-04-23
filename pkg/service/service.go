@@ -2,8 +2,6 @@ package service
 
 import (
 	"errors"
-
-	"github.com/tradeface/suggest_service/internal/conf"
 )
 
 type Service struct {
@@ -11,20 +9,52 @@ type Service struct {
 	Elastic *ElasticService
 }
 
-func New(cfg conf.Config) (service *Service, err error) {
+type Config struct {
+	MongoURI     string
+	MongoDB      string
+	ElasticURI   string
+	ElasticIndex string
+}
 
-	mongoService, err := NewMongoService(cfg)
+func New(cfg *Config) (service *Service, err error) {
+
+	services := &Service{}
+
+	mongoService, err := createMongo(cfg)
 	if err != nil {
-		return service, errors.New("failed to connect to db")
+		return service, err
 	}
+	services.Mongo = mongoService
 
-	elasticService, err := NewElasticService(cfg)
+	elasticService, err := creatElastic(cfg)
 	if err != nil {
-		return service, errors.New("failed to connect to es")
+		return service, err
 	}
+	services.Elastic = elasticService
 
-	return &Service{
-		Mongo:   mongoService,
-		Elastic: elasticService,
-	}, nil
+	return services, nil
+}
+
+func createMongo(cfg *Config) (mongoService *MongoService, err error) {
+
+	if cfg.MongoURI == "" {
+		return mongoService, err
+	}
+	mongoService, err = NewMongoService(cfg)
+	if err != nil {
+		return mongoService, errors.New("failed to connect to db")
+	}
+	return mongoService, err
+}
+
+func creatElastic(cfg *Config) (elasticService *ElasticService, err error) {
+
+	if cfg.ElasticURI == "" {
+		return elasticService, err
+	}
+	elasticService, err = NewElasticService(cfg)
+	if err != nil {
+		return elasticService, errors.New("failed to connect to es")
+	}
+	return elasticService, err
 }

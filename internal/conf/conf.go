@@ -29,7 +29,7 @@ type Config struct {
 	MongoDB      string `envconfig:"MONGO_DB" default:"suggest_test"`
 }
 
-func (cfg Config) validate() error {
+func (cfg *Config) validate() error {
 	if cfg.Stage == "" {
 		return ErrMissingEnvironmentStage
 	}
@@ -40,7 +40,7 @@ func (cfg Config) validate() error {
 	return nil
 }
 
-func (cfg Config) logging() error {
+func (cfg *Config) logging() error {
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if cfg.Debug {
@@ -54,23 +54,23 @@ func (cfg Config) logging() error {
 }
 
 // NewDefaultConfig reads configuration from environment variables and validates it
-func NewDefaultConfig() (Config, error) {
+func NewDefaultConfig() (*Config, error) {
 	cfg := new(Config)
 	err := envconfig.Process("", cfg)
 	if err != nil {
-		return *cfg, errors.Wrap(err, "Failed to parse environment config")
+		return nil, errors.Wrap(err, "Failed to parse environment config")
 	}
 
 	err = cfg.validate()
 	if err != nil {
-		return *cfg, errors.Wrap(err, "failed validation of config")
+		return nil, errors.Wrap(err, "failed validation of config")
 	}
 	err = cfg.logging()
 	if err != nil {
-		return *cfg, errors.Wrap(err, "failed setup logging based on config")
+		return nil, errors.Wrap(err, "failed setup logging based on config")
 	}
 	log.Info().Str("stage", cfg.Stage).Bool("debug", cfg.Debug).Msg("logging configured")
 	log.Info().Str("stage", cfg.Stage).Str("branch", cfg.Branch).Msg("Configuration loaded")
 
-	return *cfg, nil
+	return cfg, nil
 }

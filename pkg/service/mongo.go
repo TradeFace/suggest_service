@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/tradeface/suggest_service/internal/conf"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,12 +14,12 @@ import (
 
 type MongoService struct {
 	Client   *mongo.Client
-	cfg      conf.Config
+	cfg      *Config
 	Database *mongo.Database
 	Ctx      context.Context
 }
 
-func NewMongoService(cfg conf.Config) (*MongoService, error) {
+func NewMongoService(cfg *Config) (*MongoService, error) {
 
 	mc := &MongoService{
 		cfg: cfg,

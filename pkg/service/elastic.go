@@ -11,7 +11,6 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/rs/zerolog/log"
-	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/pkg/document"
 )
 
@@ -55,7 +54,7 @@ type ElasticResultInnerHits struct {
 	Source *document.Product `json:"_source"`
 }
 
-func NewElasticService(cfg conf.Config) (*ElasticService, error) {
+func NewElasticService(cfg *Config) (*ElasticService, error) {
 
 	es := &ElasticService{
 		URI:       []string{cfg.ElasticURI},
