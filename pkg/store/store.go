@@ -1,22 +1,23 @@
 package store
 
 import (
-	"github.com/tradeface/suggest_service/pkg/elastic"
-	"github.com/tradeface/suggest_service/pkg/mongo"
+	"github.com/tradeface/suggest_service/pkg/service"
 )
 
 type Stores struct {
-	Product *ProductStore
-	Domain  *DomainStore
-	User    *UserStore
-	Auth    *AuthStore
+	Product      *ProductStore
+	Domain       *DomainStore
+	User         *UserStore
+	Auth         *AuthStore
+	ElasticQuery *ElasticQueryStore
 }
 
-func New(dbconn *mongo.MongoClient, esconn *elastic.Elastic) (*Stores, error) {
+func New(service *service.Service) (*Stores, error) {
 	return &Stores{
-		Product: NewProductStore(esconn),
-		Domain:  NewDomainStore(dbconn),
-		User:    NewUserStore(dbconn),
-		Auth:    NewAuthStore(),
+		Product:      NewProductStore(service.Elastic),
+		Domain:       NewDomainStore(service.Mongo),
+		User:         NewUserStore(service.Mongo),
+		Auth:         NewAuthStore(),
+		ElasticQuery: NewElasticQueryStore(),
 	}, nil
 }

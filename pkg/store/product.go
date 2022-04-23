@@ -4,14 +4,14 @@ import (
 	"log"
 
 	"github.com/tradeface/suggest_service/pkg/document"
-	"github.com/tradeface/suggest_service/pkg/elastic"
+	"github.com/tradeface/suggest_service/pkg/service"
 )
 
 type ProductStore struct {
-	esconn *elastic.Elastic
+	esconn *service.ElasticService
 }
 
-func NewProductStore(esconn *elastic.Elastic) *ProductStore {
+func NewProductStore(esconn *service.ElasticService) *ProductStore {
 	return &ProductStore{
 		esconn: esconn,
 	}

@@ -1,4 +1,4 @@
-package elastic
+package service
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/tradeface/suggest_service/pkg/document"
 )
 
-type Elastic struct {
+type ElasticService struct {
 	Client    *elasticsearch.Client
 	URI       []string
 	IndexName string
@@ -55,9 +55,9 @@ type ElasticResultInnerHits struct {
 	Source *document.Product `json:"_source"`
 }
 
-func NewElastic(cfg *conf.Config) (*Elastic, error) {
+func NewElasticService(cfg *conf.Config) (*ElasticService, error) {
 
-	es := &Elastic{
+	es := &ElasticService{
 		URI:       []string{cfg.ElasticURI},
 		IndexName: cfg.ElasticIndex,
 		debug:     false,
@@ -66,7 +66,7 @@ func NewElastic(cfg *conf.Config) (*Elastic, error) {
 	return es, err
 }
 
-func (es *Elastic) startClient() error {
+func (es *ElasticService) startClient() error {
 
 	var err error
 
@@ -84,7 +84,7 @@ func (es *Elastic) startClient() error {
 	return err
 }
 
-func (es *Elastic) Search(query string) (r ElasticResult, err error) {
+func (es *ElasticService) Search(query string) (r ElasticResult, err error) {
 
 	res, err := es.Client.Search(
 		es.Client.Search.WithContext(context.Background()),
@@ -107,7 +107,7 @@ func (es *Elastic) Search(query string) (r ElasticResult, err error) {
 	if res.IsError() {
 		var e map[string]interface{}
 		if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
-			return r, fmt.Errorf("Error parsing the response body: %s", err)
+			return r, fmt.Errorf("error parsing the response body: %s", err)
 		} else {
 			// Print the response status and error information.
 			return r, fmt.Errorf("[%s] %s: %s",
@@ -118,14 +118,14 @@ func (es *Elastic) Search(query string) (r ElasticResult, err error) {
 		}
 	}
 	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-		return r, fmt.Errorf("Error parsing the response body: %s", err)
+		return r, fmt.Errorf("error parsing the response body: %s", err)
 	}
 	return r, err
 }
 
 //debug functions
-func (es *Elastic) LogRoundTrip(req *http.Request, res *http.Response, err error, ts time.Time, td time.Duration) error {
-	if es.debug == false {
+func (es *ElasticService) LogRoundTrip(req *http.Request, res *http.Response, err error, ts time.Time, td time.Duration) error {
+	if !es.debug {
 		return nil
 	}
 	log.Printf("req", req)
@@ -134,10 +134,10 @@ func (es *Elastic) LogRoundTrip(req *http.Request, res *http.Response, err error
 	return nil
 }
 
-func (es *Elastic) RequestBodyEnabled() bool {
+func (es *ElasticService) RequestBodyEnabled() bool {
 	return es.debug
 }
 
-func (es *Elastic) ResponseBodyEnabled() bool {
+func (es *ElasticService) ResponseBodyEnabled() bool {
 	return es.debug
 }

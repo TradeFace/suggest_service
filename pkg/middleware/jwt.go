@@ -98,13 +98,3 @@ func extractFromHeader(c echo.Context, header, authScheme string) (string, error
 	}
 	return "", ErrJWTMissing
 }
-
-// ValidateToken and return an error if it fails
-// func validateToken(ctx context.Context, providerURL, token string) (*jwt.JwtPayload, error) {
-// 	payload, err := jwt.Validate(ctx, providerURL, token)
-// 	if err != nil {
-// 		log.Warn().Err(err).Msg("failed to validate header")
-// 		return nil, ErrJWTValidation
-// 	}
-// 	return payload, nil
-// }

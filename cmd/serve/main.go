@@ -9,10 +9,9 @@ import (
 	echolog "github.com/labstack/gommon/log"
 	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/internal/conf"
-	"github.com/tradeface/suggest_service/pkg/elastic"
 	"github.com/tradeface/suggest_service/pkg/middleware"
-	"github.com/tradeface/suggest_service/pkg/mongo"
 	"github.com/tradeface/suggest_service/pkg/server"
+	"github.com/tradeface/suggest_service/pkg/service"
 	"github.com/tradeface/suggest_service/pkg/store"
 )
 
@@ -42,17 +41,12 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	dbconn, err := mongo.NewClient(cfg)
+	services, err := service.New(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}
 
-	esconn, err := elastic.NewElastic(cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to es")
-	}
-
-	stores, err := store.New(dbconn, esconn)
+	stores, err := store.New(services)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}

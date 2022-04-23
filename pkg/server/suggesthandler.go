@@ -5,31 +5,21 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/store"
 )
 
+const DOMAIN_QUERY_CACHE_MIN = 5
+
 type suggestHandler struct {
-	esQueryCache map[string]esQueryCacheItem
-	stores       *store.Stores
+	stores *store.Stores
 }
-
-type esQueryCacheItem struct {
-	expire time.Time
-	query  string
-}
-
-const QUERY_CACHE_SEC = 300
-
-//TODO: run cache clean every x seconds
 
 func NewSuggestHandler(stores *store.Stores) *suggestHandler {
 	return &suggestHandler{
-		esQueryCache: make(map[string]esQueryCacheItem, 0),
-		stores:       stores,
+		stores: stores,
 	}
 }
 
@@ -55,11 +45,9 @@ func (sh *suggestHandler) getQuery(c echo.Context) (string, error) {
 
 func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
 
-	if cacheItem, c := sh.esQueryCache[host]; c {
-		if cacheItem.expire.After(time.Now()) {
-			return cacheItem.query, nil
-		}
-		delete(sh.esQueryCache, host)
+	query, err := sh.stores.ElasticQuery.GetQuery("domain_suggest_" + host)
+	if err == nil {
+		return query, nil
 	}
 
 	// dbdomain, err := sh.stores.Domain.GetOneWithHost(host)
@@ -68,7 +56,7 @@ func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
 	// }
 	// filters := sh.getBaseFilters(dbdomain)
 
-	query := fmt.Sprintf(`{
+	query = fmt.Sprintf(`{
         
         "from": 0,
         "size": %%d,
@@ -90,10 +78,7 @@ func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
                         
     }`) //"filter": [%s] , filters
 
-	sh.esQueryCache[host] = esQueryCacheItem{
-		expire: time.Now().Add(time.Second * QUERY_CACHE_SEC),
-		query:  query,
-	}
+	sh.stores.ElasticQuery.AddQuery("domain_suggest_"+host, query, DOMAIN_QUERY_CACHE_MIN)
 
 	return query, nil
 }

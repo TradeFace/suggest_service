@@ -1,4 +1,4 @@
-package mongo
+package service
 
 import (
 	"context"
@@ -8,21 +8,21 @@ import (
 	"github.com/tradeface/suggest_service/internal/conf"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	mongo_driver "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type MongoClient struct {
-	Client   *mongo_driver.Client
+type MongoService struct {
+	Client   *mongo.Client
 	cfg      *conf.Config
-	Database *mongo_driver.Database
+	Database *mongo.Database
 	Ctx      context.Context
 }
 
-func NewClient(cfg *conf.Config) (*MongoClient, error) {
+func NewMongoService(cfg *conf.Config) (*MongoService, error) {
 
-	mc := &MongoClient{
+	mc := &MongoService{
 		cfg: cfg,
 	}
 
@@ -33,9 +33,9 @@ func NewClient(cfg *conf.Config) (*MongoClient, error) {
 	return mc, mc.Connect()
 }
 
-func (mc *MongoClient) Connect() (err error) {
+func (mc *MongoService) Connect() (err error) {
 
-	mc.Client, err = mongo_driver.Connect(
+	mc.Client, err = mongo.Connect(
 		mc.Ctx,
 		options.Client().ApplyURI(mc.cfg.MongoURI),
 	)
@@ -47,7 +47,7 @@ func (mc *MongoClient) Connect() (err error) {
 	return err
 }
 
-func (mc *MongoClient) IsConnected() bool {
+func (mc *MongoService) IsConnected() bool {
 
 	err := mc.Client.Ping(mc.Ctx, readpref.Primary())
 	if err != nil {
@@ -56,7 +56,7 @@ func (mc *MongoClient) IsConnected() bool {
 	return true
 }
 
-func (mc *MongoClient) close() {
+func (mc *MongoService) close() {
 	defer func() {
 		if err := mc.Client.Disconnect(mc.Ctx); err != nil {
 			log.Default().Println(err)
@@ -64,13 +64,13 @@ func (mc *MongoClient) close() {
 	}()
 }
 
-func (mc *MongoClient) GetOne(coll string, query bson.M, result interface{}) error {
+func (mc *MongoService) GetOne(coll string, query bson.M, result interface{}) error {
 
 	err := mc.Database.Collection(coll).FindOne(context.Background(), query).Decode(result)
 	return err
 }
 
-func (mc *MongoClient) GetAll(coll string, query bson.M, results interface{}) (err error) {
+func (mc *MongoService) GetAll(coll string, query bson.M, results interface{}) (err error) {
 
 	cur, err := mc.Database.Collection(coll).Find(context.Background(), query)
 	if err != nil {
@@ -84,6 +84,6 @@ func (mc *MongoClient) GetAll(coll string, query bson.M, results interface{}) (e
 	return nil
 }
 
-func (mc *MongoClient) GetMongoId(id string) (objID primitive.ObjectID, err error) {
+func (mc *MongoService) GetMongoId(id string) (objID primitive.ObjectID, err error) {
 	return primitive.ObjectIDFromHex(id)
 }

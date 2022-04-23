@@ -2,16 +2,16 @@ package store
 
 import (
 	"github.com/tradeface/suggest_service/pkg/document"
-	"github.com/tradeface/suggest_service/pkg/mongo"
+	"github.com/tradeface/suggest_service/pkg/service"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type DomainStore struct {
-	dbconn   *mongo.MongoClient
+	dbconn   *service.MongoService
 	collName string
 }
 
-func NewDomainStore(dbconn *mongo.MongoClient) *DomainStore {
+func NewDomainStore(dbconn *service.MongoService) *DomainStore {
 	return &DomainStore{
 		dbconn:   dbconn,
 		collName: "domain",

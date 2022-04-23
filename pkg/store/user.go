@@ -5,16 +5,16 @@ import (
 
 	"github.com/tradeface/suggest_service/pkg/authorization"
 	"github.com/tradeface/suggest_service/pkg/document"
-	"github.com/tradeface/suggest_service/pkg/mongo"
+	"github.com/tradeface/suggest_service/pkg/service"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 type UserStore struct {
-	dbconn   *mongo.MongoClient
+	dbconn   *service.MongoService
 	collName string
 }
 
-func NewUserStore(dbconn *mongo.MongoClient) *UserStore {
+func NewUserStore(dbconn *service.MongoService) *UserStore {
 	return &UserStore{
 		dbconn:   dbconn,
 		collName: "user",
@@ -52,7 +52,6 @@ func (u *UserStore) GetWithId(id string) (results []*document.User, err error) {
 	err = u.getAll(bson.M{"_id": objID}, &results)
 	for _, result := range results {
 		u.setStringId(result)
-		// authorization.MakeJwt(result)
 	}
 
 	return results, err
