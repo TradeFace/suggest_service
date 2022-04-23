@@ -2,6 +2,7 @@ package authorization
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -55,16 +56,17 @@ func (au *AuthUser) GetClaim(claim string) (interface{}, error) {
 	return nil, errors.New("not a claim")
 }
 
-func NewJwtWithUser(docUser *document.User) (token string, err error) {
+func NewJwtWithUser(docUser *document.User, JWTSalt string) (token string, err error) {
 
 	// Set custom claims
+	expiresAt := time.Now().Add(time.Minute * TOKEN_VALID_MIN).Unix()
 	authClaims := &AuthClaims{
 		docUser.Name,
 		docUser.Email,
 		docUser.CompanyId,
 		docUser.Roles,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * TOKEN_VALID_MIN).Unix(),
+			ExpiresAt: expiresAt,
 			Id:        docUser.Id,
 		},
 	}
@@ -72,8 +74,10 @@ func NewJwtWithUser(docUser *document.User) (token string, err error) {
 	// Create token with claims
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, authClaims)
 
+	signingToken := GetSigningToken(JWTSalt, docUser.Password, expiresAt)
+
 	// Generate encoded token and send it as response.
-	return jwtToken.SignedString([]byte("secret"))
+	return jwtToken.SignedString(signingToken)
 }
 
 // Private helpers
@@ -83,4 +87,9 @@ func getRolesSet(authClaims AuthClaims) (roles *helpers.Set, err error) {
 		roles = helpers.NewSet(authClaims.Roles)
 	}
 	return roles, nil
+}
+
+func GetSigningToken(salt string, password string, expiresAt int64) []byte {
+
+	return []byte(fmt.Sprintf("%s:%s:%d", salt, password, expiresAt))
 }

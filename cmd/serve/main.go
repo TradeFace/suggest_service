@@ -42,7 +42,12 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}
 
-	stores, err := store.New(services)
+	storeConf := &store.Config{
+		Service: services,
+		JWTSalt: cfg.JWTSalt,
+	}
+
+	stores, err := store.New(storeConf)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}
@@ -63,7 +68,7 @@ func main() {
 	// e.Use(middleware.Logger())
 	// e.Use(middleware.Recover())
 
-	e.Use(middleware.JWTWithConfig(&middleware.JWTConfig{}, stores.Auth))
+	e.Use(middleware.JWTWithConfig(&middleware.JWTConfig{}, stores, cfg.JWTSalt))
 
 	srv.RegisterHandlers(e)
 

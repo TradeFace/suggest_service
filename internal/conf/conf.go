@@ -27,6 +27,7 @@ type Config struct {
 	ElasticIndex string `envconfig:"ELASTIC_INDEX" default:"suggest_testa"`
 	MongoURI     string `envconfig:"MONGO_URI" default:"mongodb://root:example@127.0.0.1:27017"`
 	MongoDB      string `envconfig:"MONGO_DB" default:"suggest_test"`
+	JWTSalt      string `envconfig:"JWT_SALT" default:"abc12345"`
 }
 
 func (cfg *Config) validate() error {

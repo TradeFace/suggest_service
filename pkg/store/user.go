@@ -12,12 +12,14 @@ import (
 type UserStore struct {
 	dbconn   *service.MongoService
 	collName string
+	JWTSalt  string
 }
 
-func NewUserStore(dbconn *service.MongoService) *UserStore {
+func NewUserStore(dbconn *service.MongoService, JWTSalt string) *UserStore {
 	return &UserStore{
 		dbconn:   dbconn,
 		collName: "user",
+		JWTSalt:  JWTSalt,
 	}
 }
 
@@ -32,7 +34,7 @@ func (u *UserStore) Login(email string, password string) (results []*document.Us
 
 	for _, result := range results {
 		u.setStringId(result)
-		token, err := authorization.NewJwtWithUser(result)
+		token, err := authorization.NewJwtWithUser(result, u.JWTSalt)
 		if err != nil {
 			return results, fmt.Errorf("Unauthorized")
 		}

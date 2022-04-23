@@ -12,11 +12,16 @@ type Stores struct {
 	ElasticQuery *ElasticQueryStore
 }
 
-func New(service *service.Service) (*Stores, error) {
+type Config struct {
+	JWTSalt string
+	Service *service.Service
+}
+
+func New(cfg *Config) (*Stores, error) {
 	return &Stores{
-		Product:      NewProductStore(service.Elastic),
-		Domain:       NewDomainStore(service.Mongo),
-		User:         NewUserStore(service.Mongo),
+		Product:      NewProductStore(cfg.Service.Elastic),
+		Domain:       NewDomainStore(cfg.Service.Mongo),
+		User:         NewUserStore(cfg.Service.Mongo, cfg.JWTSalt),
 		Auth:         NewAuthStore(),
 		ElasticQuery: NewElasticQueryStore(),
 	}, nil

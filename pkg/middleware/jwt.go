@@ -37,7 +37,9 @@ type JWTConfig struct {
 }
 
 // JWTWithConfig middleware which validates tokens
-func JWTWithConfig(config *JWTConfig, authStore *store.AuthStore) echo.MiddlewareFunc {
+
+//TODO: cleanup function too large
+func JWTWithConfig(config *JWTConfig, stores *store.Stores, JWTSalt string) echo.MiddlewareFunc {
 
 	if config.AuthScheme == "" {
 		config.AuthScheme = DefaultAuthScheme
@@ -54,7 +56,7 @@ func JWTWithConfig(config *JWTConfig, authStore *store.AuthStore) echo.Middlewar
 				return next(c)
 			}
 			//try to get it from stored auth
-			authUser, err := authStore.GetAuthUser(tokenString)
+			authUser, err := stores.Auth.GetAuthUser(tokenString)
 			if err == nil {
 				//we have a valid authUser; returning
 				log.Info().Msg("got auth user from cache")
@@ -67,7 +69,25 @@ func JWTWithConfig(config *JWTConfig, authStore *store.AuthStore) echo.Middlewar
 				if _, ok := token.Method.(jwt.SigningMethod); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
-				return []byte("secret"), nil
+
+				expiresAt := token.Claims.(*authorization.AuthClaims).ExpiresAt
+				if expiresAt == 0 {
+					return nil, err
+				}
+
+				Id := token.Claims.(*authorization.AuthClaims).Id
+				if Id == "" {
+					return nil, err
+				}
+
+				docUser, err := stores.User.GetWithId(Id)
+				if err != nil {
+					return nil, err
+				}
+
+				signingToken := authorization.GetSigningToken(JWTSalt, docUser[0].Password, expiresAt)
+
+				return signingToken, nil
 			})
 
 			if !token.Valid || err != nil {
@@ -81,7 +101,7 @@ func JWTWithConfig(config *JWTConfig, authStore *store.AuthStore) echo.Middlewar
 			if err != nil {
 				return next(c)
 			}
-			authStore.AddAuthUser(tokenString, authUser)
+			stores.Auth.AddAuthUser(tokenString, authUser)
 
 			c.Set("authUser", authUser)
 			return next(c)
