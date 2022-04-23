@@ -23,7 +23,7 @@ const (
 	// APPNAME contains the name of the program
 	APPNAME = "suggest_service"
 	// APPVERSION contains the version of the program
-	APPVERSION = "0.0.2"
+	APPVERSION = "0.0.3"
 )
 
 type jwtCustomClaims struct {
