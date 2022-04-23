@@ -27,15 +27,15 @@ type AuthClaims struct {
 
 const TOKEN_VALID_MIN = 60
 
-func NewAuthUserWithClaims(claims *AuthClaims) (authUser *AuthUser, err error) {
+func NewAuthUserWithClaims(authClaims *AuthClaims) (authUser *AuthUser, err error) {
 
-	roles, err := getRolesSet(*claims)
+	roles, err := getRolesSet(*authClaims)
 	if err != nil {
 		return authUser, err
 	}
 
 	authUser = &AuthUser{
-		claims: *claims,
+		claims: *authClaims,
 		roles:  roles,
 	}
 	return authUser, nil
@@ -55,32 +55,32 @@ func (au *AuthUser) GetClaim(claim string) (interface{}, error) {
 	return nil, errors.New("not a claim")
 }
 
-func NewJwtWithUser(usr *document.User) (token string, err error) {
+func NewJwtWithUser(docUser *document.User) (token string, err error) {
 
 	// Set custom claims
-	claims := &AuthClaims{
-		usr.Name,
-		usr.Email,
-		usr.CompanyId,
-		usr.Roles,
+	authClaims := &AuthClaims{
+		docUser.Name,
+		docUser.Email,
+		docUser.CompanyId,
+		docUser.Roles,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * TOKEN_VALID_MIN).Unix(),
-			Id:        usr.Id,
+			Id:        docUser.Id,
 		},
 	}
 
 	// Create token with claims
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, authClaims)
 
 	// Generate encoded token and send it as response.
 	return jwtToken.SignedString([]byte("secret"))
 }
 
-//private helpers
-func getRolesSet(claims AuthClaims) (roles *helpers.Set, err error) {
+// Private helpers
+func getRolesSet(authClaims AuthClaims) (roles *helpers.Set, err error) {
 
-	if claims.Roles != nil {
-		roles = helpers.NewSet(claims.Roles)
+	if authClaims.Roles != nil {
+		roles = helpers.NewSet(authClaims.Roles)
 	}
 	return roles, nil
 }

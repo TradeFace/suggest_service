@@ -76,8 +76,8 @@ func JWTWithConfig(config *JWTConfig, authStore *store.AuthStore) echo.Middlewar
 				return next(c)
 			}
 
-			claims := token.Claims.(*authorization.AuthClaims)
-			authUser, err = authorization.NewAuthUserWithClaims(claims)
+			authClaims := token.Claims.(*authorization.AuthClaims)
+			authUser, err = authorization.NewAuthUserWithClaims(authClaims)
 			if err != nil {
 				return next(c)
 			}

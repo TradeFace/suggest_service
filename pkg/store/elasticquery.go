@@ -16,7 +16,9 @@ type ElasticQuery struct {
 
 func NewElasticQueryStore() *ElasticQueryStore {
 
-	elasticQueryStore := &ElasticQueryStore{}
+	elasticQueryStore := &ElasticQueryStore{
+		elasticQuery: make(map[string]ElasticQuery),
+	}
 
 	done := make(chan bool)
 	elasticQueryStore.forever(done)
