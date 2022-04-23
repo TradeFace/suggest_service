@@ -3,21 +3,18 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 
 	echolog "github.com/labstack/gommon/log"
 	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/internal/conf"
+	"github.com/tradeface/suggest_service/internal/server"
 	"github.com/tradeface/suggest_service/pkg/middleware"
-	"github.com/tradeface/suggest_service/pkg/server"
 	"github.com/tradeface/suggest_service/pkg/service"
 	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 //TODO: config cli/dockersecrets
-
-//  https://pkg.go.dev/github.com/golang-jwt/jwt/v4
 
 const (
 	// APPNAME contains the name of the program
@@ -25,14 +22,6 @@ const (
 	// APPVERSION contains the version of the program
 	APPVERSION = "0.0.3"
 )
-
-type jwtCustomClaims struct {
-	Name  string `json:"name"`
-	Admin bool   `json:"admin"`
-	jwt.StandardClaims
-}
-
-//tmp to get token
 
 func main() {
 
