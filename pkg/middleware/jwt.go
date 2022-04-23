@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/pkg/authorization"
+	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 const (
@@ -36,7 +37,7 @@ type JWTConfig struct {
 }
 
 // JWTWithConfig middleware which validates tokens
-func JWTWithConfig(config *JWTConfig, auth *authorization.AuthChecker) echo.MiddlewareFunc {
+func JWTWithConfig(config *JWTConfig, authStore *store.AuthStore) echo.MiddlewareFunc {
 
 	if config.AuthScheme == "" {
 		config.AuthScheme = DefaultAuthScheme
@@ -52,7 +53,14 @@ func JWTWithConfig(config *JWTConfig, auth *authorization.AuthChecker) echo.Midd
 				log.Info().Msg("no auth found")
 				return next(c)
 			}
-			//try to get it from cached auth
+			//try to get it from stored auth
+			authUser, err := authStore.GetAuthUser(tokenString)
+			if err == nil {
+				//we have a valid authUser; returning
+				log.Info().Msg("got auth user from cache")
+				c.Set("authUser", authUser)
+				return next(c)
+			}
 
 			token, err := jwt.ParseWithClaims(tokenString, &authorization.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 
@@ -69,10 +77,11 @@ func JWTWithConfig(config *JWTConfig, auth *authorization.AuthChecker) echo.Midd
 			}
 
 			claims := token.Claims.(*authorization.AuthClaims)
-			authUser, err := auth.SetTokenClaims(claims)
+			authUser, err = authorization.NewAuthUserWithClaims(claims)
 			if err != nil {
 				return next(c)
 			}
+			authStore.AddAuthUser(tokenString, authUser)
 
 			c.Set("authUser", authUser)
 			return next(c)

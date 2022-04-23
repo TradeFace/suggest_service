@@ -6,19 +6,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type Domain struct {
+type DomainStore struct {
 	dbconn   *mongo.MongoClient
 	collName string
 }
 
-func NewDomain(dbconn *mongo.MongoClient) *Domain {
-	return &Domain{
+func NewDomainStore(dbconn *mongo.MongoClient) *DomainStore {
+	return &DomainStore{
 		dbconn:   dbconn,
 		collName: "domain",
 	}
 }
 
-func (d *Domain) GetWithId(id string) (results []*document.Domain, err error) {
+func (d *DomainStore) GetWithId(id string) (results []*document.Domain, err error) {
 
 	objID, err := d.dbconn.GetMongoId(id)
 	if err != nil {
@@ -33,7 +33,7 @@ func (d *Domain) GetWithId(id string) (results []*document.Domain, err error) {
 	return results, err
 }
 
-func (d *Domain) GetWithHost(host string) (results []*document.Domain, err error) {
+func (d *DomainStore) GetWithHost(host string) (results []*document.Domain, err error) {
 
 	//TODO: query aliases
 	err = d.getAll(bson.M{"host": host}, &results)
@@ -43,7 +43,7 @@ func (d *Domain) GetWithHost(host string) (results []*document.Domain, err error
 	return results, err
 }
 
-func (d *Domain) GetOneWithHost(host string) (result *document.Domain, err error) {
+func (d *DomainStore) GetOneWithHost(host string) (result *document.Domain, err error) {
 
 	//TODO: query aliases
 	err = d.getOne(bson.M{"host": host}, &result)
@@ -51,16 +51,16 @@ func (d *Domain) GetOneWithHost(host string) (result *document.Domain, err error
 	return result, err
 }
 
-func (d *Domain) getOne(query bson.M, result interface{}) error {
+func (d *DomainStore) getOne(query bson.M, result interface{}) error {
 
 	return d.dbconn.GetOne(d.collName, query, result)
 }
 
-func (d *Domain) getAll(query bson.M, results interface{}) (err error) {
+func (d *DomainStore) getAll(query bson.M, results interface{}) (err error) {
 	return d.dbconn.GetAll(d.collName, query, results)
 }
 
-func (d *Domain) setStringId(result *document.Domain) {
+func (d *DomainStore) setStringId(result *document.Domain) {
 	if result == nil {
 		return
 	}

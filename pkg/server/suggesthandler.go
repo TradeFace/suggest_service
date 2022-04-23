@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tradeface/suggest_service/pkg/authorization"
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/store"
 )
@@ -16,7 +15,6 @@ import (
 type suggestHandler struct {
 	esQueryCache map[string]esQueryCacheItem
 	stores       *store.Stores
-	auth         *authorization.AuthChecker
 }
 
 type esQueryCacheItem struct {
@@ -28,11 +26,10 @@ const QUERY_CACHE_SEC = 300
 
 //TODO: run cache clean every x seconds
 
-func NewSuggestHandler(stores *store.Stores, auth *authorization.AuthChecker) *suggestHandler {
+func NewSuggestHandler(stores *store.Stores) *suggestHandler {
 	return &suggestHandler{
 		esQueryCache: make(map[string]esQueryCacheItem, 0),
 		stores:       stores,
-		auth:         auth,
 	}
 }
 

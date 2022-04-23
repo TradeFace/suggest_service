@@ -1,32 +1,25 @@
 package store
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/elastic"
-	"github.com/tradeface/suggest_service/pkg/mongo"
 )
 
-type Product struct {
-	dbconn *mongo.MongoClient
+type ProductStore struct {
 	esconn *elastic.Elastic
-	cfg    *conf.Config
 }
 
-func NewProduct(dbconn *mongo.MongoClient, esconn *elastic.Elastic, cfg *conf.Config) *Product {
-	return &Product{
-		dbconn: dbconn,
+func NewProductStore(esconn *elastic.Elastic) *ProductStore {
+	return &ProductStore{
 		esconn: esconn,
-		cfg:    cfg,
 	}
 }
 
-func (p *Product) Search(query string) (results []*document.Product, err error) {
+func (p *ProductStore) Search(query string) (results []*document.Product, err error) {
 
-	fmt.Println(query)
+	// fmt.Println(query)
 	res, err := p.esconn.Search(query)
 	if err != nil {
 		log.Printf("Error getting response: %s", err)

@@ -15,17 +15,15 @@ type Server struct {
 	cfg            *conf.Config
 	stores         *store.Stores
 	suggestHandler *suggestHandler
-	auth           *authorization.AuthChecker
 }
 
-func NewServer(cfg *conf.Config, stores *store.Stores, auth *authorization.AuthChecker) (*Server, error) {
+func NewServer(cfg *conf.Config, stores *store.Stores) (*Server, error) {
 
-	suggestHandler := NewSuggestHandler(stores, auth)
+	suggestHandler := NewSuggestHandler(stores)
 	return &Server{
 		cfg:            cfg,
 		stores:         stores,
 		suggestHandler: suggestHandler,
-		auth:           auth,
 	}, nil
 }
 
@@ -67,7 +65,6 @@ func (srv *Server) Output(c echo.Context, res interface{}, err error) error {
 		return nil
 	}
 	return c.JSON(http.StatusOK, payload)
-
 }
 
 func (srv *Server) sendError(c echo.Context, err error) {

@@ -6,17 +6,15 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/helpers"
 )
 
-type AuthChecker struct {
-	user map[string]*AuthUser
-}
-
 type AuthUser struct {
-	claims AuthClaims
-	roles  *helpers.Set
-	expire time.Time
+	claims         AuthClaims
+	roles          *helpers.Set
+	TokenExpire    time.Time
+	LastseenExpire time.Time
 }
 
 type AuthClaims struct {
@@ -27,46 +25,20 @@ type AuthClaims struct {
 	jwt.StandardClaims
 }
 
-func NewAuthChecker() *AuthChecker {
-	return &AuthChecker{
-		user: make(map[string]*AuthUser, 0),
-	}
-}
+const TOKEN_VALID_MIN = 60
 
-func (ac *AuthChecker) GetAuthUser(userId string) (user *AuthUser, err error) {
+func NewAuthUserWithClaims(claims *AuthClaims) (authUser *AuthUser, err error) {
 
-	if user, ok := ac.user[userId]; ok {
-		return user, nil
-	}
-	return user, errors.New("user not found")
-}
-
-func (ac *AuthChecker) SetTokenClaims(claims *AuthClaims) (userClaims *AuthUser, err error) {
-
-	roles, err := ac.getRolesSet(*claims)
+	roles, err := getRolesSet(*claims)
 	if err != nil {
-		return userClaims, err
+		return authUser, err
 	}
 
-	userClaims = &AuthUser{
+	authUser = &AuthUser{
 		claims: *claims,
 		roles:  roles,
 	}
-	// userId, err := userClaims.GetClaim("Id")
-	// if err != nil {
-	// 	return userClaims, err
-	// }
-
-	//ac.user[userId.(string)] = userClaims
-	return userClaims, nil
-}
-
-func (ac *AuthChecker) getRolesSet(claims AuthClaims) (roles *helpers.Set, err error) {
-
-	if claims.Roles != nil {
-		roles = helpers.NewSet(claims.Roles)
-	}
-	return roles, nil
+	return authUser, nil
 }
 
 func (au *AuthUser) HasRole(role string) bool {
@@ -81,4 +53,34 @@ func (au *AuthUser) GetClaim(claim string) (interface{}, error) {
 		return v.FieldByName(claim).Interface(), nil
 	}
 	return nil, errors.New("not a claim")
+}
+
+func NewJwtWithUser(usr *document.User) (token string, err error) {
+
+	// Set custom claims
+	claims := &AuthClaims{
+		usr.Name,
+		usr.Email,
+		usr.CompanyId,
+		usr.Roles,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Minute * TOKEN_VALID_MIN).Unix(),
+			Id:        usr.Id,
+		},
+	}
+
+	// Create token with claims
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response.
+	return jwtToken.SignedString([]byte("secret"))
+}
+
+//private helpers
+func getRolesSet(claims AuthClaims) (roles *helpers.Set, err error) {
+
+	if claims.Roles != nil {
+		roles = helpers.NewSet(claims.Roles)
+	}
+	return roles, nil
 }

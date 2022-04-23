@@ -9,39 +9,40 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type User struct {
+type UserStore struct {
 	dbconn   *mongo.MongoClient
 	collName string
 }
 
-func NewUser(dbconn *mongo.MongoClient) *User {
-	return &User{
+func NewUserStore(dbconn *mongo.MongoClient) *UserStore {
+	return &UserStore{
 		dbconn:   dbconn,
 		collName: "user",
 	}
 }
 
-func (u *User) Login(email string, password string) (results []*document.User, err error) {
+func (u *UserStore) Login(email string, password string) (results []*document.User, err error) {
 
 	err = u.getAll(bson.M{
 		"$and": []bson.M{
-			bson.M{"email": email},
-			bson.M{"password": password},
+			{"email": email},
+			{"password": password},
 		},
 	}, &results)
 
 	for _, result := range results {
 		u.setStringId(result)
-		err := authorization.MakeJwt(result)
+		token, err := authorization.NewJwtWithUser(result)
 		if err != nil {
 			return results, fmt.Errorf("Unauthorized")
 		}
+		result.Token = token
 	}
 
 	return results, err
 }
 
-func (u *User) GetWithId(id string) (results []*document.User, err error) {
+func (u *UserStore) GetWithId(id string) (results []*document.User, err error) {
 
 	objID, err := u.dbconn.GetMongoId(id)
 	if err != nil {
@@ -57,16 +58,16 @@ func (u *User) GetWithId(id string) (results []*document.User, err error) {
 	return results, err
 }
 
-func (u *User) getOne(query bson.M, result interface{}) error {
+func (u *UserStore) getOne(query bson.M, result interface{}) error {
 
 	return u.dbconn.GetOne(u.collName, query, result)
 }
 
-func (u *User) getAll(query bson.M, results interface{}) (err error) {
+func (u *UserStore) getAll(query bson.M, results interface{}) (err error) {
 	return u.dbconn.GetAll(u.collName, query, results)
 }
 
-func (u *User) setStringId(result *document.User) {
+func (u *UserStore) setStringId(result *document.User) {
 	if result == nil {
 		return
 	}

@@ -9,7 +9,6 @@ import (
 	echolog "github.com/labstack/gommon/log"
 	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/internal/conf"
-	"github.com/tradeface/suggest_service/pkg/authorization"
 	"github.com/tradeface/suggest_service/pkg/elastic"
 	"github.com/tradeface/suggest_service/pkg/middleware"
 	"github.com/tradeface/suggest_service/pkg/mongo"
@@ -53,14 +52,12 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to es")
 	}
 
-	stores, err := store.New(dbconn, esconn, cfg)
+	stores, err := store.New(dbconn, esconn)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}
 
-	auth := authorization.NewAuthChecker()
-
-	srv, err := server.NewServer(cfg, stores, auth)
+	srv, err := server.NewServer(cfg, stores)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to bind api")
 	}
@@ -76,7 +73,7 @@ func main() {
 	// e.Use(middleware.Logger())
 	// e.Use(middleware.Recover())
 
-	e.Use(middleware.JWTWithConfig(&middleware.JWTConfig{}, auth))
+	e.Use(middleware.JWTWithConfig(&middleware.JWTConfig{}, stores.Auth))
 
 	srv.RegisterHandlers(e)
 
