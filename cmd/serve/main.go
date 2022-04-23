@@ -62,13 +62,10 @@ func main() {
 	e.Logger.SetOutput(ioutil.Discard)
 	e.Logger.SetLevel(echolog.OFF)
 
-	// tmp Login route
-	// e.GET("/login", login)
-
 	// e.Use(middleware.Logger())
 	// e.Use(middleware.Recover())
 
-	e.Use(middleware.JWTWithConfig(&middleware.JWTConfig{}, stores, cfg.JWTSalt))
+	e.Use(middleware.JWTWithConfig(stores, cfg.JWTSalt))
 
 	srv.RegisterHandlers(e)
 

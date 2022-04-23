@@ -16,7 +16,6 @@ const (
 	DefaultAuthScheme = "Bearer"
 	// DefaultAuthHeaderName default header to load the JWT
 	DefaultAuthHeaderName = "Authorization"
-
 	// DefaultContextVar the variable in the context to store the JWT token after successful login
 	DefaultContextVar = "user"
 )
@@ -24,30 +23,15 @@ const (
 var (
 	// ErrJWTMissing missing or malformed jwt
 	ErrJWTMissing = echo.NewHTTPError(http.StatusBadRequest, "missing or malformed jwt")
-
 	// ErrJWTValidation invalid jwt
 	ErrJWTValidation = echo.NewHTTPError(http.StatusUnauthorized, "invalid jwt")
 )
 
-// JWTConfig jwt middleware configuration
-type JWTConfig struct {
-	ProviderURL string
-	ClientID    string
-	AuthScheme  string
-}
-
-// JWTWithConfig middleware which validates tokens
-
-//TODO: cleanup function too large
-func JWTWithConfig(config *JWTConfig, stores *store.Stores, JWTSalt string) echo.MiddlewareFunc {
-
-	if config.AuthScheme == "" {
-		config.AuthScheme = DefaultAuthScheme
-	}
+func JWTWithConfig(stores *store.Stores, JWTSalt string) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
+
 		return func(c echo.Context) error {
-			log.Info().Msg("context updating")
 
 			tokenString, err := extractFromHeader(c, "Authorization", "Bearer")
 			if err != nil {
@@ -55,6 +39,7 @@ func JWTWithConfig(config *JWTConfig, stores *store.Stores, JWTSalt string) echo
 				log.Info().Msg("no auth found")
 				return next(c)
 			}
+
 			//try to get it from stored auth
 			authUser, err := stores.Auth.GetAuthUser(tokenString)
 			if err == nil {
@@ -64,31 +49,8 @@ func JWTWithConfig(config *JWTConfig, stores *store.Stores, JWTSalt string) echo
 				return next(c)
 			}
 
-			token, err := jwt.ParseWithClaims(tokenString, &authorization.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
-
-				if _, ok := token.Method.(jwt.SigningMethod); !ok {
-					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-				}
-
-				expiresAt := token.Claims.(*authorization.AuthClaims).ExpiresAt
-				if expiresAt == 0 {
-					return nil, err
-				}
-
-				Id := token.Claims.(*authorization.AuthClaims).Id
-				if Id == "" {
-					return nil, err
-				}
-
-				docUser, err := stores.User.GetWithId(Id)
-				if err != nil {
-					return nil, err
-				}
-
-				signingToken := authorization.GetSigningToken(JWTSalt, docUser[0].Password, expiresAt)
-
-				return signingToken, nil
-			})
+			//try to get auth by token
+			token, err := ParseWithClaims(tokenString, JWTSalt, stores, &authorization.AuthClaims{})
 
 			if !token.Valid || err != nil {
 				//no valid auth found, see what we can do without one
@@ -96,11 +58,14 @@ func JWTWithConfig(config *JWTConfig, stores *store.Stores, JWTSalt string) echo
 				return next(c)
 			}
 
+			//we have a valid token, try to create authuser
 			authClaims := token.Claims.(*authorization.AuthClaims)
 			authUser, err = authorization.NewAuthUserWithClaims(authClaims)
 			if err != nil {
+				//failed to create authuser, see what we can do without one
 				return next(c)
 			}
+			//we have a valid token, add it to cache
 			stores.Auth.AddAuthUser(tokenString, authUser)
 
 			c.Set("authUser", authUser)
@@ -109,8 +74,38 @@ func JWTWithConfig(config *JWTConfig, stores *store.Stores, JWTSalt string) echo
 	}
 }
 
+func ParseWithClaims(tokenString string, JWTSalt string, stores *store.Stores, authClaims *authorization.AuthClaims) (*jwt.Token, error) {
+
+	return jwt.ParseWithClaims(tokenString, authClaims, func(token *jwt.Token) (interface{}, error) {
+
+		if _, ok := token.Method.(jwt.SigningMethod); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
+		expiresAt := token.Claims.(*authorization.AuthClaims).ExpiresAt
+		if expiresAt == 0 {
+			return nil, fmt.Errorf("expire claim missing")
+		}
+
+		Id := token.Claims.(*authorization.AuthClaims).Id
+		if Id == "" {
+			return nil, fmt.Errorf("id claim missing")
+		}
+
+		docUser, err := stores.User.GetWithId(Id)
+		if err != nil {
+			return nil, err
+		}
+
+		signingToken := authorization.GetSigningToken(JWTSalt, docUser[0].Password, expiresAt)
+
+		return signingToken, nil
+	})
+}
+
 // ExtractFromHeader attempt to get the JWT from the provided header
-func extractFromHeader(c echo.Context, header, authScheme string) (string, error) {
+func extractFromHeader(c echo.Context, header string, authScheme string) (string, error) {
+
 	auth := c.Request().Header.Get(header)
 	l := len(authScheme)
 	if len(auth) > l+1 && auth[:l] == authScheme {
