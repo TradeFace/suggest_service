@@ -4,7 +4,7 @@ import (
 	"github.com/tradeface/suggest_service/pkg/service"
 )
 
-type Stores struct {
+type Provider struct {
 	Product      *ProductStore
 	Domain       *DomainStore
 	User         *UserStore
@@ -14,11 +14,11 @@ type Stores struct {
 
 type Config struct {
 	JWTSalt string
-	Service *service.Service
+	Service *service.Provider
 }
 
-func New(cfg *Config) (*Stores, error) {
-	return &Stores{
+func NewProvider(cfg *Config) (*Provider, error) {
+	return &Provider{
 		Product:      NewProductStore(cfg.Service.Elastic),
 		Domain:       NewDomainStore(cfg.Service.Mongo),
 		User:         NewUserStore(cfg.Service.Mongo, cfg.JWTSalt),

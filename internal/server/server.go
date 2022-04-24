@@ -1,79 +1,42 @@
 package server
 
 import (
-	"errors"
-	"net/http"
+	"github.com/rs/zerolog/log"
 
-	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"github.com/tradeface/suggest_service/internal/conf"
-	"github.com/tradeface/suggest_service/pkg/authorization"
-	"github.com/tradeface/suggest_service/pkg/store"
+	"github.com/tradeface/suggest_service/internal/controller"
+	"github.com/tradeface/suggest_service/internal/provider"
 )
 
 type Server struct {
-	cfg            *conf.Config
-	stores         *store.Stores
-	suggestHandler *suggestHandler
+	controller *controller.Provider
 }
 
-func NewServer(cfg *conf.Config, stores *store.Stores) (*Server, error) {
+func NewServer(cfg *conf.Config, providers *provider.Provider) (*Server, error) {
 
-	suggestHandler := NewSuggestHandler(stores)
+	controllerProvider, err := controller.NewProvider(providers.StoreProvider)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to db")
+	}
 	return &Server{
-		cfg:            cfg,
-		stores:         stores,
-		suggestHandler: suggestHandler,
+		controller: controllerProvider,
 	}, nil
 }
 
 func (srv *Server) RegisterHandlers(e *echo.Echo) {
 
 	//http://localhost:8080/product?filter[host]=www.ib.nl&text=gips
-	e.GET("/product", srv.GetProductList)
+	e.GET("/product", srv.controller.Product.GetList)
 
 	//http://localhost:8080/domain/?filter[host]=www.ib.nl
-	e.GET("/domain", srv.GetDomainList)
+	e.GET("/domain", srv.controller.Domain.GetList)
 
 	//http://localhost:8080/domain/537e3ea78812e9f0e7331733
-	e.GET("/domain/:id", srv.GetDomain)
+	e.GET("/domain/:id", srv.controller.Domain.Get)
 
-	e.GET("/user/login", srv.LoginUser)
+	e.GET("/user/login", srv.controller.User.Login)
 
 	//http://localhost:8888/user/6262ce0dafd1acb9dfbc4f87
-	e.GET("/user/:id", srv.GetUser)
-}
-
-func (srv *Server) GetAuthUser(c echo.Context) (*authorization.AuthUser, error) {
-
-	user := c.Get("authUser")
-	if user == nil {
-		return nil, errors.New("no auth user available")
-	}
-	return user.(*authorization.AuthUser), nil
-}
-
-func (srv *Server) Output(c echo.Context, res interface{}, err error) error {
-
-	if err != nil {
-		srv.sendError(c, err)
-		return nil
-	}
-	payload, err := jsonapi.Marshal(res)
-	if err != nil {
-		srv.sendError(c, err)
-		return nil
-	}
-	return c.JSON(http.StatusOK, payload)
-}
-
-func (srv *Server) sendError(c echo.Context, err error) {
-
-	c.Response().Header().Set(echo.HeaderContentType, jsonapi.MediaType)
-	c.Response().WriteHeader(http.StatusBadRequest)
-	jsonapi.MarshalErrors(c.Response().Writer, []*jsonapi.ErrorObject{{
-		Title:  "Request Error",
-		Detail: err.Error(),
-		Status: "400",
-	}})
+	e.GET("/user/:id", srv.controller.User.Get)
 }

@@ -1,4 +1,4 @@
-package server
+package suggest
 
 //TODO: where should this file live?
 
@@ -9,23 +9,23 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/tradeface/suggest_service/internal/provider"
 	"github.com/tradeface/suggest_service/pkg/document"
-	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 const DOMAIN_QUERY_CACHE_MIN = 5
 
-type suggestHandler struct {
-	stores *store.Stores
+type QueryBuilder struct {
+	stores *provider.StoreProvider
 }
 
-func NewSuggestHandler(stores *store.Stores) *suggestHandler {
-	return &suggestHandler{
-		stores: stores,
+func NewQueryBuilder(storeProvider *provider.StoreProvider) *QueryBuilder {
+	return &QueryBuilder{
+		stores: storeProvider,
 	}
 }
 
-func (sh *suggestHandler) getQuery(c echo.Context) (string, error) {
+func (sh *QueryBuilder) GetQuery(c echo.Context) (string, error) {
 
 	text := c.QueryParam("text")
 	host := c.QueryParam("filter[host]")
@@ -45,7 +45,7 @@ func (sh *suggestHandler) getQuery(c echo.Context) (string, error) {
 	return fmt.Sprintf(q, pageSize, text), nil
 }
 
-func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
+func (sh *QueryBuilder) getDomainQuery(host string) (string, error) {
 
 	query, err := sh.stores.ElasticQuery.GetQuery("domain_suggest_" + host)
 	if err == nil {
@@ -85,7 +85,7 @@ func (sh *suggestHandler) getDomainQuery(host string) (string, error) {
 	return query, nil
 }
 
-func (sh *suggestHandler) getBaseFilters(domain *document.Domain) string {
+func (sh *QueryBuilder) getBaseFilters(domain *document.Domain) string {
 
 	filters := make([]string, 0)
 	if res := sh.getClassificationFilter(domain); res != "" {
@@ -111,7 +111,7 @@ func (sh *suggestHandler) getBaseFilters(domain *document.Domain) string {
 	return strings.Join(filters[:], ",")
 }
 
-func (sh *suggestHandler) getClassificationFilter(domain *document.Domain) string {
+func (sh *QueryBuilder) getClassificationFilter(domain *document.Domain) string {
 
 	return fmt.Sprintf(`{
 		"term": {
@@ -120,7 +120,7 @@ func (sh *suggestHandler) getClassificationFilter(domain *document.Domain) strin
 	}`, domain.MainClassification)
 }
 
-func (sh *suggestHandler) getSupplierFilter(domain *document.Domain) string {
+func (sh *QueryBuilder) getSupplierFilter(domain *document.Domain) string {
 
 	catalogsStr, err := json.Marshal(domain.Catalogs)
 	if err != nil || len(domain.Catalogs) == 0 {
@@ -138,7 +138,7 @@ func (sh *suggestHandler) getSupplierFilter(domain *document.Domain) string {
 	}`, catalogsStr)
 }
 
-func (sh *suggestHandler) getAvailabilityFilter(domain *document.Domain) string {
+func (sh *QueryBuilder) getAvailabilityFilter(domain *document.Domain) string {
 
 	states, err := domain.GetSetting("SEARCH", "disabled_states")
 	if err != nil {
@@ -166,7 +166,7 @@ func (sh *suggestHandler) getAvailabilityFilter(domain *document.Domain) string 
 	}`, state)
 }
 
-func (sh *suggestHandler) getStockFilter(domain *document.Domain) string {
+func (sh *QueryBuilder) getStockFilter(domain *document.Domain) string {
 
 	if !domain.ModuleIsEnabled("STOCK") {
 		return ""
@@ -191,7 +191,7 @@ func (sh *suggestHandler) getStockFilter(domain *document.Domain) string {
 	}`
 }
 
-func (sh *suggestHandler) getPublicOnlyFilter() string {
+func (sh *QueryBuilder) getPublicOnlyFilter() string {
 	// Only allow public articles to return or articles that this user may see.
 	// E.g. Filter out private articles for non IB admins.
 	// if ($this->authChecker->isGranted('ROLE_MAY_SEE_NON_PUBLIC_ARTICLES')) {

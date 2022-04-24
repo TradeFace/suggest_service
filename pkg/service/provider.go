@@ -1,10 +1,8 @@
 package service
 
-import (
-	"errors"
-)
+import "errors"
 
-type Service struct {
+type Provider struct {
 	Mongo   *MongoService
 	Elastic *ElasticService
 }
@@ -16,9 +14,9 @@ type Config struct {
 	ElasticIndex string
 }
 
-func New(cfg *Config) (service *Service, err error) {
+func NewProvider(cfg *Config) (service *Provider, err error) {
 
-	services := &Service{}
+	services := &Provider{}
 
 	mongoService, err := createMongo(cfg)
 	if err != nil {

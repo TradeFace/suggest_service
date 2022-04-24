@@ -8,10 +8,9 @@ import (
 	echolog "github.com/labstack/gommon/log"
 	"github.com/rs/zerolog/log"
 	"github.com/tradeface/suggest_service/internal/conf"
+	"github.com/tradeface/suggest_service/internal/provider"
 	"github.com/tradeface/suggest_service/internal/server"
 	"github.com/tradeface/suggest_service/pkg/middleware"
-	"github.com/tradeface/suggest_service/pkg/service"
-	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 //TODO: config cli/dockersecrets
@@ -30,29 +29,9 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	srvConf := &service.Config{
-		MongoURI:     cfg.MongoURI,
-		MongoDB:      cfg.MongoDB,
-		ElasticURI:   cfg.ElasticURI,
-		ElasticIndex: cfg.ElasticIndex,
-	}
+	providers := provider.NewProvider(cfg)
 
-	services, err := service.New(srvConf)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to db")
-	}
-
-	storeConf := &store.Config{
-		Service: services,
-		JWTSalt: cfg.JWTSalt,
-	}
-
-	stores, err := store.New(storeConf)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to db")
-	}
-
-	srv, err := server.NewServer(cfg, stores)
+	srv, err := server.NewServer(cfg, providers)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to bind api")
 	}
@@ -65,7 +44,7 @@ func main() {
 	// e.Use(middleware.Logger())
 	// e.Use(middleware.Recover())
 
-	e.Use(middleware.JWTWithConfig(stores, cfg.JWTSalt))
+	e.Use(middleware.JWTWithConfig(providers.StoreProvider, cfg.JWTSalt))
 
 	srv.RegisterHandlers(e)
 
