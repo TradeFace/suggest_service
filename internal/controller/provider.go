@@ -14,7 +14,6 @@ import (
 type Provider struct {
 	Domain  *DomainController
 	Product *ProductController
-	User    *UserController
 }
 
 func NewProvider(cfg *conf.Config, storeProvider *store.Provider) (*Provider, error) {
@@ -23,10 +22,6 @@ func NewProvider(cfg *conf.Config, storeProvider *store.Provider) (*Provider, er
 	return &Provider{
 		Domain: &DomainController{
 			StoreProvider: storeProvider,
-		},
-		User: &UserController{
-			StoreProvider: storeProvider,
-			cfg:           cfg,
 		},
 		Product: productController,
 	}, nil
