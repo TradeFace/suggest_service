@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -48,12 +49,16 @@ func (mc *MongoService) Connect() (err error) {
 
 func (mc *MongoService) IsConnected() bool {
 
+	if mc == nil {
+		return false
+	}
+
 	err := mc.Client.Ping(mc.Ctx, readpref.Primary())
 
 	return err == nil
 }
 
-func (mc *MongoService) close() {
+func (mc *MongoService) Close() {
 	defer func() {
 		if err := mc.Client.Disconnect(mc.Ctx); err != nil {
 			log.Default().Println(err)
@@ -63,11 +68,19 @@ func (mc *MongoService) close() {
 
 func (mc *MongoService) GetOne(coll string, query bson.M, result interface{}) error {
 
+	if !mc.IsConnected() {
+		return errors.New("mongo not connected")
+	}
+
 	err := mc.Database.Collection(coll).FindOne(context.Background(), query).Decode(result)
 	return err
 }
 
 func (mc *MongoService) GetAll(coll string, query bson.M, results interface{}) (err error) {
+
+	if !mc.IsConnected() {
+		return errors.New("mongo not connected")
+	}
 
 	cur, err := mc.Database.Collection(coll).Find(context.Background(), query)
 	if err != nil {

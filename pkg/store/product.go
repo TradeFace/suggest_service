@@ -1,6 +1,8 @@
 package store
 
 import (
+	"errors"
+
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/service"
 )
@@ -17,6 +19,11 @@ func NewProductStore(esconn *service.ElasticService) *ProductStore {
 }
 
 func (p *ProductStore) Search(query string) (results []*document.Product, err error) {
+
+	results = make([]*document.Product, 0)
+	if p.esconn == nil {
+		return results, errors.New("elastic not configured")
+	}
 
 	res, err := p.esconn.Search(query)
 	if err != nil {

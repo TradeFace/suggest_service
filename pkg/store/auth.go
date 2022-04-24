@@ -32,10 +32,14 @@ func (ac *AuthStore) GetAuthUser(tokenString string) (authUser *authorization.Au
 		authUser.LastseenExpire = time.Now().Add(CACHE_LASTSEEN_MIN * time.Minute)
 		return authUser, nil
 	}
-	return authUser, errors.New("user not found")
+	return nil, errors.New("user not found")
 }
 
 func (ac *AuthStore) AddAuthUser(tokenString string, authUser *authorization.AuthUser) (err error) {
+
+	if authUser == nil || ac.authUser == nil {
+		return errors.New("authUser is nil")
+	}
 
 	expiresAt, err := authUser.GetClaim("ExpiresAt")
 	if err != nil {

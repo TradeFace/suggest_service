@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,6 +47,7 @@ type ElasticResultOuterHits struct {
 
 type ElasticResultInnerHitsSlice []ElasticResultInnerHits
 
+//TODO: make Source dynamic
 type ElasticResultInnerHits struct {
 	Index  string            `json:"_index"`
 	Type   string            `json:"_type"`
@@ -83,7 +85,11 @@ func (es *ElasticService) startClient() error {
 	return err
 }
 
-func (es *ElasticService) Search(query string) (r ElasticResult, err error) {
+func (es *ElasticService) Search(query string) (r *ElasticResult, err error) {
+
+	if es == nil || es.Client == nil {
+		return r, errors.New("elastic not instanciated")
+	}
 
 	res, err := es.Client.Search(
 		es.Client.Search.WithContext(context.Background()),
@@ -127,8 +133,8 @@ func (es *ElasticService) LogRoundTrip(req *http.Request, res *http.Response, er
 	if !es.debug {
 		return nil
 	}
-	log.Printf("req", req)
-	log.Printf("res", res)
+	fmt.Println("req", req)
+	fmt.Println("res", res)
 
 	return nil
 }
