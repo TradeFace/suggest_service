@@ -1,8 +1,6 @@
 package controller
 
-import (
-	"github.com/tradeface/suggest_service/internal/provider"
-)
+import "github.com/tradeface/suggest_service/pkg/store"
 
 type Provider struct {
 	Domain  *DomainController
@@ -10,7 +8,7 @@ type Provider struct {
 	User    *UserController
 }
 
-func NewProvider(storeProvider *provider.StoreProvider) (*Provider, error) {
+func NewProvider(storeProvider *store.Provider) (*Provider, error) {
 
 	productController := NewProductController(storeProvider)
 	return &Provider{

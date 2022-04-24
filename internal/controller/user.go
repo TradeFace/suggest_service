@@ -5,11 +5,11 @@ import (
 	"log"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tradeface/suggest_service/internal/provider"
+	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 type UserController struct {
-	StoreProvider *provider.StoreProvider
+	StoreProvider *store.Provider
 }
 
 func (uc *UserController) Login(c echo.Context) error {

@@ -9,17 +9,17 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tradeface/suggest_service/internal/provider"
 	"github.com/tradeface/suggest_service/pkg/document"
+	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 const DOMAIN_QUERY_CACHE_MIN = 5
 
 type QueryBuilder struct {
-	stores *provider.StoreProvider
+	stores *store.Provider
 }
 
-func NewQueryBuilder(storeProvider *provider.StoreProvider) *QueryBuilder {
+func NewQueryBuilder(storeProvider *store.Provider) *QueryBuilder {
 	return &QueryBuilder{
 		stores: storeProvider,
 	}

@@ -44,7 +44,7 @@ func main() {
 	// e.Use(middleware.Logger())
 	// e.Use(middleware.Recover())
 
-	e.Use(middleware.JWTWithConfig(providers.StoreProvider, cfg.JWTSalt))
+	e.Use(middleware.JWTWithConfig(providers.Store, cfg.JWTSalt))
 
 	srv.RegisterHandlers(e)
 

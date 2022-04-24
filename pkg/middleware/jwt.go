@@ -7,8 +7,8 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
-	"github.com/tradeface/suggest_service/internal/provider"
 	"github.com/tradeface/suggest_service/pkg/authorization"
+	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 const (
@@ -27,7 +27,7 @@ var (
 	ErrJWTValidation = echo.NewHTTPError(http.StatusUnauthorized, "invalid jwt")
 )
 
-func JWTWithConfig(storeProvider *provider.StoreProvider, JWTSalt string) echo.MiddlewareFunc {
+func JWTWithConfig(stores *store.Provider, JWTSalt string) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 
@@ -41,7 +41,7 @@ func JWTWithConfig(storeProvider *provider.StoreProvider, JWTSalt string) echo.M
 			}
 
 			//try to get it from stored auth
-			authUser, err := storeProvider.Auth.GetAuthUser(tokenString)
+			authUser, err := stores.Auth.GetAuthUser(tokenString)
 			if err == nil {
 				//we have a valid authUser; returning
 				log.Info().Msg("got auth user from cache")
@@ -50,7 +50,7 @@ func JWTWithConfig(storeProvider *provider.StoreProvider, JWTSalt string) echo.M
 			}
 
 			//try to get auth by token
-			token, err := ParseWithClaims(tokenString, JWTSalt, storeProvider, &authorization.AuthClaims{})
+			token, err := ParseWithClaims(tokenString, JWTSalt, stores, &authorization.AuthClaims{})
 
 			if !token.Valid || err != nil {
 				//no valid auth found, see what we can do without one
@@ -66,7 +66,7 @@ func JWTWithConfig(storeProvider *provider.StoreProvider, JWTSalt string) echo.M
 				return next(c)
 			}
 			//we have a valid token, add it to cache
-			storeProvider.Auth.AddAuthUser(tokenString, authUser)
+			stores.Auth.AddAuthUser(tokenString, authUser)
 
 			c.Set("authUser", authUser)
 			return next(c)
@@ -74,7 +74,7 @@ func JWTWithConfig(storeProvider *provider.StoreProvider, JWTSalt string) echo.M
 	}
 }
 
-func ParseWithClaims(tokenString string, JWTSalt string, storeProvider *provider.StoreProvider, authClaims *authorization.AuthClaims) (*jwt.Token, error) {
+func ParseWithClaims(tokenString string, JWTSalt string, stores *store.Provider, authClaims *authorization.AuthClaims) (*jwt.Token, error) {
 
 	return jwt.ParseWithClaims(tokenString, authClaims, func(token *jwt.Token) (interface{}, error) {
 
@@ -92,7 +92,7 @@ func ParseWithClaims(tokenString string, JWTSalt string, storeProvider *provider
 			return nil, fmt.Errorf("id claim missing")
 		}
 
-		docUser, err := storeProvider.User.GetWithId(Id)
+		docUser, err := stores.User.GetWithId(Id)
 		if err != nil {
 			return nil, err
 		}

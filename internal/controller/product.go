@@ -6,16 +6,16 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
-	"github.com/tradeface/suggest_service/internal/provider"
 	"github.com/tradeface/suggest_service/internal/suggest"
+	"github.com/tradeface/suggest_service/pkg/store"
 )
 
 type ProductController struct {
-	StoreProvider *provider.StoreProvider
+	StoreProvider *store.Provider
 	queryBuilder  *suggest.QueryBuilder
 }
 
-func NewProductController(storeProvider *provider.StoreProvider) *ProductController {
+func NewProductController(storeProvider *store.Provider) *ProductController {
 	return &ProductController{
 		StoreProvider: storeProvider,
 		queryBuilder:  suggest.NewQueryBuilder(storeProvider),
