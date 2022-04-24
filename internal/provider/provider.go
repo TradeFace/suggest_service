@@ -26,7 +26,6 @@ func NewProvider(cfg *conf.Config) *Provider {
 
 	storeConf := &store.Config{
 		Service: serviceProvider,
-		JWTSalt: cfg.JWTSalt,
 	}
 
 	storeProvider, err := store.NewProvider(storeConf)

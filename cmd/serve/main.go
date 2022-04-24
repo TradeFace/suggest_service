@@ -13,8 +13,6 @@ import (
 	"github.com/tradeface/suggest_service/pkg/middleware"
 )
 
-//TODO: config cli/dockersecrets
-
 const (
 	// APPNAME contains the name of the program
 	APPNAME = "suggest_service"

@@ -1,7 +1,5 @@
 package suggest
 
-//TODO: where should this file live?
-
 import (
 	"encoding/json"
 	"fmt"

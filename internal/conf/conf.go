@@ -17,6 +17,8 @@ var (
 	ErrMissingEnvironmentBranch = errors.New("Missing Branch ENV Variable")
 )
 
+//TODO: config cli/dockersecrets
+
 // Config for the environment
 type Config struct {
 	Debug        bool   `envconfig:"DEBUG"`
@@ -34,10 +36,6 @@ func (cfg *Config) validate() error {
 	if cfg.Stage == "" {
 		return ErrMissingEnvironmentStage
 	}
-	// if cfg.Branch == "" {
-	// 	return ErrMissingEnvironmentBranch
-	// }
-
 	return nil
 }
 

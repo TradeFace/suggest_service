@@ -36,6 +36,7 @@ func (srv *Server) RegisterHandlers(e *echo.Echo) {
 	e.GET("/domain/:id", srv.controller.Domain.Get)
 
 	e.GET("/user/login", srv.controller.User.Login)
+	e.GET("/user/renew", srv.controller.User.Renew)
 
 	//http://localhost:8888/user/6262ce0dafd1acb9dfbc4f87
 	e.GET("/user/:id", srv.controller.User.Get)

@@ -17,6 +17,7 @@ type UserController struct {
 }
 
 func (uc *UserController) Login(c echo.Context) error {
+
 	email := c.QueryParam("email")
 	password := c.QueryParam("password")
 
@@ -27,6 +28,35 @@ func (uc *UserController) Login(c echo.Context) error {
 	}
 
 	if !authorization.CheckPasswordHash(password, res[0].Password) {
+		sendError(c, errors.New("No login"))
+		return nil
+	}
+
+	token, err := authorization.NewJwtWithUser(res[0], uc.cfg.JWTSalt)
+	if err != nil {
+		sendError(c, errors.New("No login"))
+		return nil
+	}
+	res[0].Token = token
+
+	return Output(c, res, err)
+}
+func (uc *UserController) Renew(c echo.Context) error {
+
+	user, err := GetAuthUser(c)
+	if err != nil {
+		err := fmt.Errorf("not allowed")
+		return Output(c, "", err)
+	}
+
+	claimId, err := user.GetClaim("Id")
+	if err != nil {
+		sendError(c, err)
+		return nil
+	}
+
+	res, err := uc.StoreProvider.User.GetWithId(claimId.(string))
+	if err != nil || len(res) != 1 {
 		sendError(c, errors.New("No login"))
 		return nil
 	}

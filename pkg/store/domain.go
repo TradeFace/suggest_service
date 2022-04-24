@@ -12,6 +12,7 @@ type DomainStore struct {
 }
 
 func NewDomainStore(dbconn *service.MongoService) *DomainStore {
+
 	return &DomainStore{
 		dbconn:   dbconn,
 		collName: "domain",

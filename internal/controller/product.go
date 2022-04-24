@@ -16,6 +16,7 @@ type ProductController struct {
 }
 
 func NewProductController(storeProvider *store.Provider) *ProductController {
+
 	return &ProductController{
 		StoreProvider: storeProvider,
 		queryBuilder:  suggest.NewQueryBuilder(storeProvider),

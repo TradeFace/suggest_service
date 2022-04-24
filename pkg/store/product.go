@@ -1,8 +1,6 @@
 package store
 
 import (
-	"log"
-
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/service"
 )
@@ -12,6 +10,7 @@ type ProductStore struct {
 }
 
 func NewProductStore(esconn *service.ElasticService) *ProductStore {
+
 	return &ProductStore{
 		esconn: esconn,
 	}
@@ -19,10 +18,8 @@ func NewProductStore(esconn *service.ElasticService) *ProductStore {
 
 func (p *ProductStore) Search(query string) (results []*document.Product, err error) {
 
-	// fmt.Println(query)
 	res, err := p.esconn.Search(query)
 	if err != nil {
-		log.Printf("Error getting response: %s", err)
 		return results, err
 	}
 	for _, hit := range res.Hits.Hits {
