@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tradeface/suggest_service/pkg/authorization"
+	"github.com/tradeface/jwt_service/pkg/authorization"
 )
 
 const CACHE_LASTSEEN_MIN = 15

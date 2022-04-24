@@ -7,17 +7,20 @@ import (
 
 	echolog "github.com/labstack/gommon/log"
 	"github.com/rs/zerolog/log"
+	"github.com/tradeface/jwt_service/pkg/middleware"
 	"github.com/tradeface/suggest_service/internal/conf"
 	"github.com/tradeface/suggest_service/internal/provider"
 	"github.com/tradeface/suggest_service/internal/server"
-	"github.com/tradeface/suggest_service/pkg/middleware"
 )
+
+//TODO: errors are a bit messy
+//TODO: recover lost connections on services
 
 const (
 	// APPNAME contains the name of the program
 	APPNAME = "suggest_service"
 	// APPVERSION contains the version of the program
-	APPVERSION = "0.0.3"
+	APPVERSION = "0.0.4"
 )
 
 func main() {
