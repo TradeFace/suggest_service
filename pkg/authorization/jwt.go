@@ -89,7 +89,7 @@ func getRolesSet(authClaims AuthClaims) (roles *helpers.Set, err error) {
 	return roles, nil
 }
 
-func GetSigningToken(salt string, password string, expiresAt int64) []byte {
+func GetSigningToken(salt string, passwordHash string, expiresAt int64) []byte {
 
-	return []byte(fmt.Sprintf("%s:%s:%d", salt, password, expiresAt))
+	return []byte(fmt.Sprintf("%s:%s:%d", salt, passwordHash, expiresAt))
 }

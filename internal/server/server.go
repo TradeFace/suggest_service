@@ -15,7 +15,7 @@ type Server struct {
 
 func NewServer(cfg *conf.Config, providers *provider.Provider) (*Server, error) {
 
-	controllerProvider, err := controller.NewProvider(providers.Store)
+	controllerProvider, err := controller.NewProvider(cfg, providers.Store)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to db")
 	}

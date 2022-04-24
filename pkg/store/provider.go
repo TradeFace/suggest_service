@@ -13,7 +13,6 @@ type Provider struct {
 }
 
 type Config struct {
-	JWTSalt string
 	Service *service.Provider
 }
 
@@ -21,7 +20,7 @@ func NewProvider(cfg *Config) (*Provider, error) {
 	return &Provider{
 		Product:      NewProductStore(cfg.Service.Elastic),
 		Domain:       NewDomainStore(cfg.Service.Mongo),
-		User:         NewUserStore(cfg.Service.Mongo, cfg.JWTSalt),
+		User:         NewUserStore(cfg.Service.Mongo),
 		Auth:         NewAuthStore(),
 		ElasticQuery: NewElasticQueryStore(),
 	}, nil

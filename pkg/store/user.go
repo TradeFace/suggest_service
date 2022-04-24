@@ -1,9 +1,6 @@
 package store
 
 import (
-	"fmt"
-
-	"github.com/tradeface/suggest_service/pkg/authorization"
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/service"
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,33 +9,21 @@ import (
 type UserStore struct {
 	dbconn   *service.MongoService
 	collName string
-	JWTSalt  string
 }
 
-func NewUserStore(dbconn *service.MongoService, JWTSalt string) *UserStore {
+func NewUserStore(dbconn *service.MongoService) *UserStore {
 	return &UserStore{
 		dbconn:   dbconn,
 		collName: "user",
-		JWTSalt:  JWTSalt,
 	}
 }
 
-func (u *UserStore) Login(email string, password string) (results []*document.User, err error) {
+func (u *UserStore) GetWithEmail(email string) (results []*document.User, err error) {
 
-	err = u.getAll(bson.M{
-		"$and": []bson.M{
-			{"email": email},
-			{"password": password},
-		},
-	}, &results)
+	err = u.getAll(bson.M{"email": email}, &results)
 
 	for _, result := range results {
 		u.setStringId(result)
-		token, err := authorization.NewJwtWithUser(result, u.JWTSalt)
-		if err != nil {
-			return results, fmt.Errorf("Unauthorized")
-		}
-		result.Token = token
 	}
 
 	return results, err
