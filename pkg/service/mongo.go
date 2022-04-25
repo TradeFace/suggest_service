@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"log"
 	"time"
 
@@ -49,7 +48,7 @@ func (mc *MongoService) Connect() (err error) {
 
 func (mc *MongoService) IsConnected() bool {
 
-	if mc == nil {
+	if mc == nil || mc.Client == nil {
 		return false
 	}
 
@@ -68,9 +67,9 @@ func (mc *MongoService) Close() {
 
 func (mc *MongoService) GetOne(coll string, query bson.M, result interface{}) error {
 
-	if !mc.IsConnected() {
-		return errors.New("mongo not connected")
-	}
+	// if !mc.IsConnected() {
+	// 	return errors.New("mongo not connected")
+	// }
 
 	err := mc.Database.Collection(coll).FindOne(context.Background(), query).Decode(result)
 	return err
@@ -78,9 +77,9 @@ func (mc *MongoService) GetOne(coll string, query bson.M, result interface{}) er
 
 func (mc *MongoService) GetAll(coll string, query bson.M, results interface{}) (err error) {
 
-	if !mc.IsConnected() {
-		return errors.New("mongo not connected")
-	}
+	// if !mc.IsConnected() {
+	// 	return errors.New("mongo not connected")
+	// }
 
 	cur, err := mc.Database.Collection(coll).Find(context.Background(), query)
 	if err != nil {

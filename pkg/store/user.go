@@ -1,6 +1,8 @@
 package store
 
 import (
+	"errors"
+
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/service"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,9 +23,12 @@ func NewUserStore(dbconn *service.MongoService) *UserStore {
 func (u *UserStore) GetWithEmail(email string) (results []*document.User, err error) {
 
 	err = u.getAll(bson.M{"email": email}, &results)
+	if err != nil {
+		return results, err
+	}
 
 	for _, result := range results {
-		u.setStringId(result)
+		result.Id, err = u.getStringId(result)
 	}
 
 	return results, err
@@ -38,7 +43,7 @@ func (u *UserStore) GetWithId(id string) (results []*document.User, err error) {
 
 	err = u.getAll(bson.M{"_id": objID}, &results)
 	for _, result := range results {
-		u.setStringId(result)
+		result.Id, err = u.getStringId(result)
 	}
 
 	return results, err
@@ -53,9 +58,10 @@ func (u *UserStore) getAll(query bson.M, results interface{}) (err error) {
 	return u.dbconn.GetAll(u.collName, query, results)
 }
 
-func (u *UserStore) setStringId(result *document.User) {
+func (u *UserStore) getStringId(result *document.User) (string, error) {
+
 	if result == nil {
-		return
+		return "", errors.New("nil result")
 	}
-	result.Id = result.ObjectID.Hex()
+	return result.ObjectID.Hex(), nil
 }

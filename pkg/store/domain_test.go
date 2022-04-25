@@ -1,12 +1,14 @@
 package store
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/tradeface/suggest_service/pkg/document"
 	"github.com/tradeface/suggest_service/pkg/service"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestNewDomainStore(t *testing.T) {
@@ -38,9 +40,67 @@ func TestNewDomainStore(t *testing.T) {
 	}
 }
 
+type (
+	mockMongoService struct {
+	}
+)
+
+func (mmc *mockMongoService) GetAll(coll string, query bson.M, results interface{}) (err error) {
+
+	r := results.(*[]*document.Domain)
+	z := *r
+
+	z = append(z, &document.Domain{
+
+		ObjectID:           [12]byte{},
+		Id:                 "",
+		Active:             false,
+		Catalogs:           []*string{},
+		Host:               "testhost",
+		MainClassification: "TC000001",
+		Settings:           map[string]interface{}{},
+		Modules:            []string{},
+	})
+	/*	results = make([]document.Domain, 0)
+		result := document.Domain{
+			ObjectID:           [12]byte{},
+			Id:                 "",
+			Active:             false,
+			Catalogs:           []*string{},
+			Host:               "testhost",
+			MainClassification: "TC000001",
+			Settings:           map[string]interface{}{},
+			Modules:            []string{},
+		}
+		results = append(results.([]document.Domain), result)*/
+	results = z
+	fmt.Println("n mock getall ", query, results, z)
+	return nil
+}
+func (mmc *mockMongoService) GetOne(coll string, query bson.M, result interface{}) error {
+	r := result.(**document.Domain)
+	z := **r
+	z.Active = true //
+	z.Host = "kaas"
+	// result = &document.Domain{
+	// 	ObjectID:           [12]byte{},
+	// 	Id:                 "",
+	// 	Active:             false,
+	// 	Catalogs:           []*string{},
+	// 	Host:               "testhost",
+	// 	MainClassification: "TC000001",
+	// 	Settings:           map[string]interface{}{},
+	// 	Modules:            []string{},
+	// }
+	return nil
+}
+func (mmc *mockMongoService) GetMongoId(id string) (objID primitive.ObjectID, err error) {
+	return primitive.ObjectIDFromHex(id)
+}
+
 func TestDomainStore_GetWithId(t *testing.T) {
 	type fields struct {
-		dbconn   *service.MongoService
+		dbconn   MongoServiceInterface
 		collName string
 	}
 	type args struct {
@@ -54,8 +114,11 @@ func TestDomainStore_GetWithId(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:   "TestRandomString",
-			fields: fields{},
+			name: "TestRandomString",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
 			args: args{
 				id: "askadsldkasdk999",
 			},
@@ -63,14 +126,40 @@ func TestDomainStore_GetWithId(t *testing.T) {
 			wantErr:     true,
 		},
 		{
-			name:   "TestValidHex",
-			fields: fields{},
+			name: "TestValidHex",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
 			args: args{
 				id: "6262ce0dafd1acb9dfbc4f87",
 			},
-			wantResults: nil,
-			wantErr:     true,
+			wantResults: []*document.Domain{
+				0: {
+					ObjectID:           [12]byte{},
+					Id:                 "",
+					Active:             false,
+					Catalogs:           []*string{},
+					Host:               "testhost",
+					MainClassification: "TC000001",
+					Settings:           map[string]interface{}{},
+					Modules:            []string{},
+				},
+			},
+			wantErr: false,
 		},
+		// {
+		// 	name: "TestWithInterface",
+		// 	fields: fields{
+		// 		dbconn:   &mockMongoService{},
+		// 		collName: "domain",
+		// 	},
+		// 	args: args{
+		// 		id: "6262ce0dafd1acb9dfbc4f87",
+		// 	},
+		// 	wantResults: []*document.Domain{},
+		// 	wantErr:     true,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -92,7 +181,7 @@ func TestDomainStore_GetWithId(t *testing.T) {
 
 func TestDomainStore_GetWithHost(t *testing.T) {
 	type fields struct {
-		dbconn   *service.MongoService
+		dbconn   MongoServiceInterface
 		collName string
 	}
 	type args struct {
@@ -105,15 +194,28 @@ func TestDomainStore_GetWithHost(t *testing.T) {
 		wantResults []*document.Domain
 		wantErr     bool
 	}{
-		{
-			name:   "TestRandomString",
-			fields: fields{},
-			args: args{
-				host: "askadsldkasdk999",
-			},
-			wantResults: nil,
-			wantErr:     true,
-		},
+		// {
+		// 	name: "TestRandomString",
+		// 	fields: fields{
+		// 		dbconn:   &mockMongoService{},
+		// 		collName: "",
+		// 	},
+		// 	args: args{
+		// 		host: "nonExistingHost",
+		// 	},
+		// 	wantResults: nil,
+		// 	wantErr:     true,
+		// },
+		// {
+		// 	name:        "",
+		// 	fields:      fields{
+		// 		dbconn:   &mockMongoService{},
+		// 		collName: "",
+		// 	},
+		// 	args:        args{},
+		// 	wantResults: []*document.Domain{},
+		// 	wantErr:     false,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -135,7 +237,7 @@ func TestDomainStore_GetWithHost(t *testing.T) {
 
 func TestDomainStore_GetOneWithHost(t *testing.T) {
 	type fields struct {
-		dbconn   *service.MongoService
+		dbconn   MongoServiceInterface
 		collName string
 	}
 	type args struct {
@@ -148,14 +250,26 @@ func TestDomainStore_GetOneWithHost(t *testing.T) {
 		wantResult *document.Domain
 		wantErr    bool
 	}{
+		// {
+		// 	name:   "TestRandomString",
+		// 	fields: fields{},
+		// 	args: args{
+		// 		host: "askadsldkasdk999",
+		// 	},
+		// 	wantResult: nil,
+		// 	wantErr:    true,
+		// },
 		{
-			name:   "TestRandomString",
-			fields: fields{},
-			args: args{
-				host: "askadsldkasdk999",
+			name: "",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
 			},
-			wantResult: nil,
-			wantErr:    true,
+			args: args{
+				host: "testHost",
+			},
+			wantResult: &document.Domain{},
+			wantErr:    false,
 		},
 	}
 	for _, tt := range tests {
@@ -176,9 +290,9 @@ func TestDomainStore_GetOneWithHost(t *testing.T) {
 	}
 }
 
-func TestDomainStore_getOne(t *testing.T) {
+func TestDomainStore_GetOne(t *testing.T) {
 	type fields struct {
-		dbconn   *service.MongoService
+		dbconn   MongoServiceInterface
 		collName string
 	}
 	type args struct {
@@ -192,10 +306,13 @@ func TestDomainStore_getOne(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "MongoNotInstanciated",
-			fields:  fields{},
+			name: "MongoNotInstanciated",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
 			args:    args{},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -204,16 +321,16 @@ func TestDomainStore_getOne(t *testing.T) {
 				dbconn:   tt.fields.dbconn,
 				collName: tt.fields.collName,
 			}
-			if err := d.getOne(tt.args.query, tt.args.result); (err != nil) != tt.wantErr {
-				t.Errorf("DomainStore.getOne() error = %v, wantErr %v", err, tt.wantErr)
+			if err := d.GetOne(tt.args.query, tt.args.result); (err != nil) != tt.wantErr {
+				t.Errorf("DomainStore.GetOne() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestDomainStore_getAll(t *testing.T) {
+func TestDomainStore_GetAll(t *testing.T) {
 	type fields struct {
-		dbconn   *service.MongoService
+		dbconn   MongoServiceInterface
 		collName string
 	}
 	type args struct {
@@ -227,10 +344,13 @@ func TestDomainStore_getAll(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "MongoNotInstanciated",
-			fields:  fields{},
+			name: "MongoNotInstanciated",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
 			args:    args{},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -239,35 +359,96 @@ func TestDomainStore_getAll(t *testing.T) {
 				dbconn:   tt.fields.dbconn,
 				collName: tt.fields.collName,
 			}
-			if err := d.getAll(tt.args.query, tt.args.results); (err != nil) != tt.wantErr {
-				t.Errorf("DomainStore.getAll() error = %v, wantErr %v", err, tt.wantErr)
+			if err := d.GetAll(tt.args.query, tt.args.results); (err != nil) != tt.wantErr {
+				t.Errorf("DomainStore.GetAll() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestDomainStore_setStringId(t *testing.T) {
+func TestDomainStore_getStringId(t *testing.T) {
 	type fields struct {
-		dbconn   *service.MongoService
+		dbconn   MongoServiceInterface
 		collName string
 	}
 	type args struct {
 		result *document.Domain
 	}
+	objID, _ := primitive.ObjectIDFromHex("625a78c4afd1acb9dfbc4f86")
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "EmptyInput",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
+			args:    args{},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "EmptyInput",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
+			args: args{
+				result: &document.Domain{
+					ObjectID:           [12]byte{},
+					Id:                 "",
+					Active:             false,
+					Catalogs:           []*string{},
+					Host:               "",
+					MainClassification: "",
+					Settings:           map[string]interface{}{},
+					Modules:            []string{},
+				},
+			},
+			want:    "000000000000000000000000",
+			wantErr: false,
+		},
+		{
+			name: "",
+			fields: fields{
+				dbconn:   &mockMongoService{},
+				collName: "",
+			},
+			args: args{
+				result: &document.Domain{
+					ObjectID:           objID,
+					Id:                 "",
+					Active:             false,
+					Catalogs:           []*string{},
+					Host:               "",
+					MainClassification: "",
+					Settings:           map[string]interface{}{},
+					Modules:            []string{},
+				},
+			},
+			want:    "625a78c4afd1acb9dfbc4f86",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &DomainStore{
+			u := &DomainStore{
 				dbconn:   tt.fields.dbconn,
 				collName: tt.fields.collName,
 			}
-			d.setStringId(tt.args.result)
+			got, err := u.getStringId(tt.args.result)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DomainStore.getStringId() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("DomainStore.getStringId() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
